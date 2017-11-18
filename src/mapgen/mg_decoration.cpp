@@ -128,6 +128,10 @@ bool Decoration::canPlaceDecoration(MMVManip *vm, v3s16 p)
 
 size_t Decoration::placeDeco(Mapgen *mg, u32 blockseed, v3s16 nmin, v3s16 nmax)
 {
+	u16 size = (nmax.Y - nmin.Y + 1) / 2;
+	s16 *floors = new s16[size];
+	s16 *ceilings = new s16[size];
+
 	PcgRandom ps(blockseed + 53);
 	int carea_size = nmax.X - nmin.X + 1;
 
@@ -185,9 +189,6 @@ size_t Decoration::placeDeco(Mapgen *mg, u32 blockseed, v3s16 nmin, v3s16 nmax)
 				}
 
 				// Get all floors and ceilings in node column
-				u16 size = (nmax.Y - nmin.Y + 1) / 2;
-				s16 floors[size];
-				s16 ceilings[size];
 				u16 num_floors = 0;
 				u16 num_ceilings = 0;
 
@@ -246,6 +247,11 @@ size_t Decoration::placeDeco(Mapgen *mg, u32 blockseed, v3s16 nmin, v3s16 nmax)
 			}
 		}
 	}
+
+	if (floors)
+		delete[] floors;
+	if (ceilings)
+		delete[] ceilings;
 
 	return 0;
 }
