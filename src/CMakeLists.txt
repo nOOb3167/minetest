@@ -484,6 +484,7 @@ endif(BUILD_CLIENT)
 
 set(client_SRCS
 	${client_SRCS}
+    ${vserv_SRCS}
 	${common_SRCS}
 	${gui_SRCS}
 	${sound_SRCS}

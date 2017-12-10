@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/tile.h"     // For TextureSource
 #include "client/keys.h"
 #include "client/joystick_controller.h"
+#include "client/vserv/vserv_clnt_iface.h"
 #include "clientmap.h"
 #include "clouds.h"
 #include "config.h"
@@ -1836,6 +1837,11 @@ bool Game::init(
 
 bool Game::initSound()
 {
+	if (! g_settings->getBool("enable_vserv"))
+		return false;
+	if (!! gs_vserv_clnt_init(g_settings->getU32("vserv_port"), g_settings->get("vserv_hostname").c_str()))
+		return false;
+
 #if USE_SOUND
 	if (g_settings->getBool("enable_sound")) {
 		infostream << "Attempting to use OpenAL audio" << std::endl;
@@ -1905,6 +1911,9 @@ bool Game::createClient(const std::string &playername,
 		return false;
 
 	bool could_connect, connect_aborted;
+
+	if (!! gs_vserv_clnt_connect_ident(g_vserv_clnt_ctl, playername.c_str(), address->c_str()))
+		return false;
 
 	if (!connectToServer(playername, password, address, port,
 			&could_connect, &connect_aborted))

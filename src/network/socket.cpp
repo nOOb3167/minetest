@@ -361,3 +361,20 @@ bool UDPSocket::WaitData(int timeout_ms)
 	// There is data
 	return true;
 }
+
+int UDPSocket::GetHostByName(const char *Name, unsigned long long *oAddr)
+{
+	struct hostent *HostEnt = NULL;
+	struct in_addr InAddr = {};
+
+	if (!(HostEnt = gethostbyname(Name)))
+		return 1;
+
+	if (HostEnt->h_addrtype != AF_INET)
+		throw SocketException("not AF_INET");
+
+	InAddr = *(struct in_addr *) HostEnt->h_addr;
+	*oAddr = ntohl(InAddr.s_addr);
+
+	return 0;
+}

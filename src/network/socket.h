@@ -63,6 +63,8 @@ public:
 	// Returns true if there is data, false if timeout occurred
 	bool WaitData(int timeout_ms);
 
+	static int GetHostByName(const char *Name, unsigned long long *oAddr);
+
 private:
 	int m_handle;
 	int m_timeout_ms;

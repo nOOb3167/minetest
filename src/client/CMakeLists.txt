@@ -14,3 +14,24 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/joystick_controller.cpp
 	PARENT_SCOPE
 )
+
+set(vserv_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_clnt.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_clnt.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_clnt_helpers.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_clnt_iface.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_clnt_test.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_helpers.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_helpers.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_log.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_misc.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_misc.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_openal_include.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_pinger.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_pinger.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_playback.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_playback.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_record.h
+	${CMAKE_CURRENT_SOURCE_DIR}/vserv/vserv_record.cpp
+	PARENT_SCOPE
+)

@@ -24,6 +24,8 @@ gtags.files
 .idea/*
 # Codelite
 *.project
+# Visual Studio
+.vs
 
 ## Files related to minetest development cycle
 /*.patch
