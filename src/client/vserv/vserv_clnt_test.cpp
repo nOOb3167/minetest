@@ -13,7 +13,6 @@
 #include <client/vserv/vserv_helpers.h>
 #include <client/vserv/vserv_log.h>
 #include <client/vserv/vserv_misc.h>
-#include <client/vserv/vserv_openal_include.h>
 #include <debug.h>
 #include <network/socket.h>
 #include <porting.h>
@@ -207,24 +206,10 @@ int gs_vserv_clnt_setup(uint32_t VServPort, const char *VServHostNameBuf, struct
 
 	struct GsVServClnt *Clnt = NULL;
 
-	ALCdevice *Device = NULL;
-	ALCcontext *Context = NULL;
-
 	std::random_device RandDev;
 
 	struct GsVServClntAddress Addr = {};
 	Address MtAddrAny((irr::u32)INADDR_ANY, 0);
-
-	if (!(Device = alcOpenDevice(NULL)))
-		GS_ERR_CLEAN(1);
-
-	if (!(Context = alcCreateContext(Device, NULL)))
-		GS_ERR_CLEAN(1);
-
-	if (! alcMakeContextCurrent(Context))
-		GS_ERR_CLEAN(1);
-
-	GS_NOALERR();
 
 	Addr.mSinFamily = AF_INET;
 	Addr.mSinPort = VServPort;
