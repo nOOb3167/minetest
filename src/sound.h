@@ -88,6 +88,12 @@ public:
 	}
 };
 
+class ISoundManagerGlobal
+{
+public:
+	virtual ~ISoundManagerGlobal() = default;
+};
+
 class DummySoundManager : public ISoundManager
 {
 public:
@@ -120,5 +126,12 @@ public:
 	void fadeSound(int sound, float step, float gain) {}
 };
 
+class DummySoundManagerGlobal : public ISoundManagerGlobal
+{
+};
+
 // Global DummySoundManager singleton
-extern DummySoundManager dummySoundManager;
+extern DummySoundManager       dummySoundManager;
+extern DummySoundManagerGlobal dummySoundManagerGlobal;
+
+extern ISoundManagerGlobal *g_sound_manager_global;

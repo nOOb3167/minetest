@@ -21,4 +21,5 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "sound.h"
 
-ISoundManager *createOpenALSoundManager(OnDemandSoundFetcher *fetcher);
+ISoundManagerGlobal *createOpenALSoundManagerGlobal();
+ISoundManager *createOpenALSoundManager(ISoundManagerGlobal *mg, OnDemandSoundFetcher *fetcher);

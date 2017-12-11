@@ -265,6 +265,71 @@ struct PlayingSound
 	bool loop;
 };
 
+class OpenALSoundManagerGlobal : public ISoundManagerGlobal
+{
+public:
+	ALCdevice * m_device;
+	ALCcontext *m_context;
+public:
+	OpenALSoundManagerGlobal() :
+		m_device(NULL),
+		m_context(NULL)
+	{
+		bool Success = 0;
+
+		infostream << "Audio: Global Initializing..." << std::endl;
+
+		if (!(m_device = alcOpenDevice(NULL)))
+			goto clean;
+
+		if (!(m_context = alcCreateContext(m_device, NULL)))
+			goto clean;
+
+		if (!alcMakeContextCurrent(m_context))
+			goto clean;
+
+		/* distance model is set per-context in OpenAL
+		   (see chapter "Attenuation By Distance" in OpenAL 1.1 spec) */
+
+		//alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+
+		if (alGetError() != AL_NO_ERROR)
+			goto clean;
+
+		infostream << "Audio: Global Initialized: OpenAL " << alGetString(AL_VERSION)
+			<< ", using " << alcGetString(m_device, ALC_DEVICE_SPECIFIER)
+			<< std::endl;
+
+		Success = true;
+
+	clean:
+		if (!Success) {
+			if (m_context)
+				alcDestroyContext(m_context);
+			if (m_device)
+				alcCloseDevice(m_device);
+			throw std::runtime_error("Audio: Global Initialization");
+		}
+	}
+
+	~OpenALSoundManagerGlobal()
+	{
+		infostream << "Audio: Global Deinitializing..." << std::endl;
+
+		if (alcGetCurrentContext() == NULL)
+			infostream << "Audio: Global Error Deinit Context" << std::endl;
+
+		alcMakeContextCurrent(NULL);
+		alcDestroyContext(m_context);
+		alcCloseDevice(m_device);
+
+		m_context = NULL;
+		m_device = NULL;
+
+		infostream << "Audio: Global Deinitialized." << std::endl;
+	}
+};
+
 class OpenALSoundManager: public ISoundManager
 {
 private:
@@ -290,68 +355,27 @@ private:
 	std::unordered_map<int, FadeState> m_sounds_fading;
 	float m_fade_delay;
 public:
-	bool m_is_initialized;
-	OpenALSoundManager(OnDemandSoundFetcher *fetcher):
+	OpenALSoundManager(OpenALSoundManagerGlobal *mgoal, OnDemandSoundFetcher *fetcher):
 		m_fetcher(fetcher),
-		m_device(NULL),
-		m_context(NULL),
+		m_device(mgoal->m_device),
+		m_context(mgoal->m_context),
 		m_next_id(1),
-		m_fade_delay(0),
-		m_is_initialized(false)
+		m_fade_delay(0)
 	{
-		ALCenum error = ALC_NO_ERROR;
-
 		infostream<<"Audio: Initializing..."<<std::endl;
 
-		m_device = alcOpenDevice(NULL);
-		if(!m_device){
-			infostream<<"Audio: No audio device available, audio system "
-				<<"not initialized"<<std::endl;
-			return;
-		}
+		/* just check that an OpenAL context is already established at this point.
+		   potentially other per-context operations such as alListener(...) could be called here. */
 
-		m_context = alcCreateContext(m_device, NULL);
-		if(!m_context){
-			error = alcGetError(m_device);
-			infostream<<"Audio: Unable to initialize audio context, "
-					<<"aborting audio initialization ("<<alcErrorString(error)
-					<<")"<<std::endl;
-			alcCloseDevice(m_device);
-			m_device = NULL;
-			return;
-		}
+		if (alcGetCurrentContext() == NULL)
+			infostream << "Audio: Error Init Context" << std::endl;
 
-		if(!alcMakeContextCurrent(m_context) ||
-				(error = alcGetError(m_device) != ALC_NO_ERROR))
-		{
-			infostream<<"Audio: Error setting audio context, aborting audio "
-					<<"initialization ("<<alcErrorString(error)<<")"<<std::endl;
-			alcDestroyContext(m_context);
-			m_context = NULL;
-			alcCloseDevice(m_device);
-			m_device = NULL;
-			return;
-		}
-
-		alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-
-		infostream<<"Audio: Initialized: OpenAL "<<alGetString(AL_VERSION)
-				<<", using "<<alcGetString(m_device, ALC_DEVICE_SPECIFIER)
-				<<std::endl;
-
-		m_is_initialized = true;
+		infostream<<"Audio: Initialized: OpenAL "<<std::endl;
 	}
 
 	~OpenALSoundManager()
 	{
 		infostream<<"Audio: Deinitializing..."<<std::endl;
-		// KABOOM!
-		// TODO: Clear SoundBuffers
-		alcMakeContextCurrent(NULL);
-		alcDestroyContext(m_context);
-		m_context = NULL;
-		alcCloseDevice(m_device);
-		m_device = NULL;
 
 		for (auto &buffer : m_buffers) {
 			for (SoundBuffer *sb : buffer.second) {
@@ -360,6 +384,7 @@ public:
 			buffer.second.clear();
 		}
 		m_buffers.clear();
+
 		infostream<<"Audio: Deinitialized."<<std::endl;
 	}
 
@@ -683,12 +708,14 @@ public:
 	}
 };
 
-ISoundManager *createOpenALSoundManager(OnDemandSoundFetcher *fetcher)
+ISoundManagerGlobal *createOpenALSoundManagerGlobal()
 {
-	OpenALSoundManager *m = new OpenALSoundManager(fetcher);
-	if(m->m_is_initialized)
-		return m;
-	delete m;
-	return NULL;
-};
+	return new OpenALSoundManagerGlobal();
+}
 
+ISoundManager *createOpenALSoundManager(ISoundManagerGlobal *mg, OnDemandSoundFetcher *fetcher)
+{
+	OpenALSoundManagerGlobal *mgoal = dynamic_cast<OpenALSoundManagerGlobal *>(mg);
+	assert(mgoal);
+	return new OpenALSoundManager(mgoal, fetcher);
+};

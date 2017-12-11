@@ -1840,16 +1840,11 @@ bool Game::initSound()
 #if USE_SOUND
 	if (g_settings->getBool("enable_sound")) {
 		infostream << "Attempting to use OpenAL audio" << std::endl;
-		sound = createOpenALSoundManager(&soundfetcher);
+		sound = createOpenALSoundManager(g_sound_manager_global, &soundfetcher);
 		if (!sound)
 			infostream << "Failed to initialize OpenAL audio" << std::endl;
 	} else
 		infostream << "Sound disabled." << std::endl;
-
-	if (!g_settings->getBool("enable_vserv"))
-		return false;
-	if (!!gs_vserv_clnt_init(g_settings->getU32("vserv_port"), g_settings->get("vserv_hostname").c_str()))
-		return false;
 #endif
 
 	if (!sound) {

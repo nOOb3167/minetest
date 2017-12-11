@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "sound.h"
 
 // Global DummySoundManager singleton
-DummySoundManager dummySoundManager;
+DummySoundManager       dummySoundManager;
+DummySoundManagerGlobal dummySoundManagerGlobal;
 
-
+ISoundManagerGlobal *g_sound_manager_global = NULL;

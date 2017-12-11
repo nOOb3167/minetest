@@ -34,6 +34,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "version.h"
 #include "renderingengine.h"
 #include "network/networkexceptions.h"
+#include "client/vserv/vserv_clnt_iface.h"
+#include "sound.h"
+
+#if USE_SOUND
+	#include "sound_openal.h"
+#endif
 
 /* mainmenumanager.h
  */
@@ -70,6 +76,15 @@ bool ClientLauncher::run(GameParams &game_params, const Settings &cmd_args)
 	// List video modes if requested
 	if (list_video_modes)
 		return RenderingEngine::print_video_modes();
+
+#if USE_SOUND
+	if (g_settings->getBool("enable_sound"))
+		g_sound_manager_global = createOpenALSoundManagerGlobal();
+	if (!g_settings->getBool("enable_vserv"))
+		return false;
+	if (!!gs_vserv_clnt_init(g_settings->getU32("vserv_port"), g_settings->get("vserv_hostname").c_str()))
+		return false;
+#endif
 
 	if (!init_engine()) {
 		errorstream << "Could not initialize game engine." << std::endl;
