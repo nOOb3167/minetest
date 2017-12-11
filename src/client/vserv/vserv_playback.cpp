@@ -148,6 +148,13 @@ int gs_playback_create(
 
 	alGenSources(PlayBack->mFlowsNum, PlayBack->mSourceVec);
 	GS_NOALERR();
+	/* minetest will screw with alDistanceModel, alListener(AL_POSITION..) etc
+	   which are meant for the 3D sounds within the game - we negate influence by forcing gain */
+	for (size_t i = 0; i < FlowsNum; i++)
+		alSourcef(PlayBack->mSourceVec[i], AL_MIN_GAIN, 1.0f);
+	for (size_t i = 0; i < FlowsNum; i++)
+		alSourcef(PlayBack->mSourceVec[i], AL_MAX_GAIN, 1.0f);
+	GS_NOALERR();
 	for (size_t i = 0; i < FlowsNum; i++)
 		alGenBuffers(PlayBack->mFlowBufsNum, PlayBack->mBufferStackVec[i]);
 	GS_NOALERR();
