@@ -1,13 +1,23 @@
 set(gui_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/guiChatConsole.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiChatConsole.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiEditBoxWithScrollbar.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiEditBoxWithScrollbar.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiEngine.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiEngine.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiFormSpecMenu.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiFormSpecMenu.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiKeyChangeMenu.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiKeyChangeMenu.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiPasswordChange.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiPasswordChange.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiPathSelectMenu.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiPathSelectMenu.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiTable.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiTable.h
 	${CMAKE_CURRENT_SOURCE_DIR}/guiVolumeChange.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiVolumeChange.h
 	${CMAKE_CURRENT_SOURCE_DIR}/intlGUIEditBox.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/intlGUIEditBox.h
 	PARENT_SCOPE
 )
