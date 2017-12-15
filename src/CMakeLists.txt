@@ -102,7 +102,7 @@ if(BUILD_CLIENT AND ENABLE_SOUND)
 endif()
 
 if(USE_SOUND)
-	set(sound_SRCS sound_openal.cpp)
+	set(sound_SRCS sound_openal.cpp sound_openal.h)
 	set(SOUND_INCLUDE_DIRS
 		${OPENAL_INCLUDE_DIR}
 		${VORBIS_INCLUDE_DIR}
@@ -384,70 +384,135 @@ set(common_SRCS
 	${database_SRCS}
 	${mapgen_SRCS}
 	ban.cpp
+	ban.h
 	chat.cpp
+	chat.h
 	clientiface.cpp
+	clientiface.h
 	collision.cpp
+	collision.h
 	content_mapnode.cpp
+	content_mapnode.h
 	content_nodemeta.cpp
+	content_nodemeta.h
 	content_sao.cpp
+	content_sao.h
 	convert_json.cpp
+	convert_json.h
 	craftdef.cpp
+	craftdef.h
 	debug.cpp
+	debug.h
 	defaultsettings.cpp
+	defaultsettings.h
 	emerge.cpp
+	emerge.h
 	environment.cpp
+	environment.h
 	face_position_cache.cpp
+	face_position_cache.h
 	filesys.cpp
+	filesys.h
 	genericobject.cpp
+	genericobject.h
 	gettext.cpp
+	gettext.h
 	httpfetch.cpp
+	httpfetch.h
 	inventory.cpp
+	inventory.h
 	inventorymanager.cpp
+	inventorymanager.h
 	itemdef.cpp
+	itemdef.h
 	itemstackmetadata.cpp
+	itemstackmetadata.h
 	light.cpp
+	light.h
 	log.cpp
+	log.h
 	map.cpp
+	map.h
 	map_settings_manager.cpp
+	map_settings_manager.h
 	mapblock.cpp
+	mapblock.h
 	mapnode.cpp
+	mapnode.h
 	mapsector.cpp
+	mapsector.h
 	metadata.cpp
+	metadata.h
 	modchannels.cpp
+	modchannels.h
 	mods.cpp
+	mods.h
 	nameidmapping.cpp
+	nameidmapping.h
 	nodedef.cpp
+	nodedef.h
 	nodemetadata.cpp
+	nodemetadata.h
 	nodetimer.cpp
+	nodetimer.h
 	noise.cpp
+	noise.h
 	objdef.cpp
+	objdef.h
 	object_properties.cpp
+	object_properties.h
 	pathfinder.cpp
+	pathfinder.h
 	player.cpp
+	player.h
 	porting.cpp
+	porting.h
 	profiler.cpp
+	profiler.h
 	quicktune.cpp
+	quicktune.h
 	raycast.cpp
+	raycast.h
 	reflowscan.cpp
+	reflowscan.h
 	remoteplayer.cpp
+	remoteplayer.h
 	rollback.cpp
+	rollback.h
 	rollback_interface.cpp
+	rollback_interface.h
 	serialization.cpp
+	serialization.h
 	server.cpp
+	server.h
 	serverenvironment.cpp
+	serverenvironment.h
 	serverlist.cpp
+	serverlist.h
 	serverobject.cpp
+	serverobject.h
 	settings.cpp
+	settings.h
 	sound.cpp
+	sound.h
 	staticobject.cpp
+	staticobject.h
 	subgame.cpp
+	subgame.h
 	terminal_chat_console.cpp
+	terminal_chat_console.h
 	tileanimation.cpp
+	tileanimation.h
 	tool.cpp
+	tool.h
 	translation.cpp
+	translation.h
 	version.cpp
+	version.h
 	voxel.cpp
+	voxel.h
 	voxelalgorithms.cpp
+	voxelalgorithms.h
 	${common_network_SRCS}
 	${JTHREAD_SRCS}
 	${common_SCRIPT_SRCS}
@@ -491,33 +556,60 @@ set(client_SRCS
 	${client_network_SRCS}
 	${client_irrlicht_changes_SRCS}
 	camera.cpp
+	camera.h
 	client.cpp
+	client.h
 	clientenvironment.cpp
+	clientenvironment.h
 	clientmap.cpp
+	clientmap.h
 	clientmedia.cpp
+	clientmedia.h
 	clientobject.cpp
+	clientobject.h
 	clouds.cpp
+	clouds.h
 	content_cao.cpp
+	content_cao.h
 	content_cso.cpp
+	content_cso.h
 	content_mapblock.cpp
+	content_mapblock.h
 	convert_json.cpp
+	convert_json.h
 	filecache.cpp
+	filecache.h
 	fontengine.cpp
+	fontengine.h
 	game.cpp
+	game.h
 	guiscalingfilter.cpp
+	guiscalingfilter.h
 	hud.cpp
+	hud.h
 	imagefilters.cpp
+	imagefilters.h
 	keycode.cpp
+	keycode.h
 	localplayer.cpp
+	localplayer.h
 	main.cpp
 	mapblock_mesh.cpp
+	mapblock_mesh.h
 	mesh.cpp
+	mesh.h
 	mesh_generator_thread.cpp
+	mesh_generator_thread.h
 	minimap.cpp
+	minimap.h
 	particles.cpp
+	particles.h
 	shader.cpp
+	shader.h
 	sky.cpp
+	sky.h
 	wieldmesh.cpp
+	wieldmesh.h
 	${client_SCRIPT_SRCS}
 	${UNITTEST_CLIENT_SRCS}
 )
