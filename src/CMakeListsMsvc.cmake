@@ -9,7 +9,7 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
 	FORCE
 )
 
-set(ZLIB_DLL "${PROJECT_SOURCE_DIR}/../../zlib125dll/dll32/zlibwapi.dll" CACHE FILEPATH "Path to zlib DLL (for installation)")
+set(ZLIB_DLL "" CACHE FILEPATH "Path to zlib DLL (for installation)")
 set(ZLIBWAPI_DLL "" CACHE FILEPATH "Path to zlibwapi DLL")
 set(OPENAL_DLL "" CACHE FILEPATH "Path to OpenAL32.dll for installation (optional)")
 set(OGG_DLL "" CACHE FILEPATH "Path to libogg.dll for installation (optional)")
@@ -25,19 +25,19 @@ set(LEVELDB_DLL "" CACHE FILEPATH "Path to leveldb dll for installation (optiona
 # GETTEXT_ICONV_DLL - find_package(Gettext) (see macro GETTEXT_HELPER)
 
 # Windows Specific - instead of finding the library via find_package(ZLIB REQUIRED)
-set(ZLIB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/../../zlib/zlib-1.2.5"
+set(ZLIB_INCLUDE_DIR "-NOTFOUND"
 		CACHE PATH "Zlib include directory")
-set(ZLIB_LIBRARIES "${PROJECT_SOURCE_DIR}/../../zlib125dll/dll32/zlibwapi.lib"
+set(ZLIB_LIBRARIES "-NOTFOUND"
 		CACHE FILEPATH "Path to zlib library (usually zlibwapi.lib)")
 # Windows Specific - help CMake find Irrlicht
-set(IRRLICHT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../../irrlicht-1.7.2"
+set(IRRLICHT_SOURCE_DIR "-NOTFOUND"
 		CACHE PATH "irrlicht dir")
 # Windows Specific - help CMake find Freetype
-set(FREETYPE_INCLUDE_DIR_ft2build "${PROJECT_SOURCE_DIR}/../../freetype2/include/"
+set(FREETYPE_INCLUDE_DIR_ft2build "-NOTFOUND"
 		CACHE PATH "freetype include dir")
-set(FREETYPE_INCLUDE_DIR_freetype2 "${PROJECT_SOURCE_DIR}/../../freetype2/include/freetype"
+set(FREETYPE_INCLUDE_DIR_freetype2 "-NOTFOUND"
 		CACHE PATH "freetype include dir")
-set(FREETYPE_LIBRARY "${PROJECT_SOURCE_DIR}/../../freetype2/objs/win32/vc2005/freetype247.lib"
+set(FREETYPE_LIBRARY "-NOTFOUND"
 		CACHE FILEPATH "Path to freetype247.lib")
 
 
