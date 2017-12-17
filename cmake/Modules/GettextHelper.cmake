@@ -43,7 +43,7 @@ macro(GETTEXT_HELPER ENABLE BLACKLISTED_LOCALES)
 			if(GETTEXT_ICONV_DLL)
 				install(FILES ${GETTEXT_ICONV_DLL} DESTINATION ${BINDIR})
 			endif()
-		endif
+		endif()
 
 		if(TRUE)
 			set(MO_FILES)

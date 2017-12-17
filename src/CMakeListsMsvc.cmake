@@ -144,7 +144,7 @@ if(BUILD_CLIENT AND ENABLE_SOUND AND NOT (OPENAL_FOUND AND VORBIS_FOUND))
 		message(WARNING "Sound enabled, but OpenAL not found!")
 	endif()
 	if (NOT VORBIS_FOUND)
-		message(STATUS "Sound enabled, but Vorbis libraries not found!")
+		message(STATUS "Sound enabled, but Vorbis (and/or Ogg) libraries not found!")
 	endif()
 	message(FATAL_ERROR "Sound enabled, but cannot be used.\n"
 		"To continue, either fill in the required paths or disable sound. (-DENABLE_SOUND=0)")
@@ -672,6 +672,29 @@ add_custom_target(GenerateVersion
 	-P "${CMAKE_SOURCE_DIR}/cmake/Modules/GenerateVersion.cmake"
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
+macro(FIXME_FILTER_NOTFOUND)
+	foreach(VV IN ITEMS ${ARGV})
+		if(${VV} MATCHES "-NOTFOUND$")
+			unset(${VV})
+			unset(${VV} CACHE)
+		endif()
+	endforeach()
+endmacro()
+
+FIXME_FILTER_NOTFOUND(
+	CURL_INCLUDE_DIR
+	GETTEXT_INCLUDE_DIR
+	FREETYPE_INCLUDE_DIRS
+	CURSES_INCLUDE_DIRS
+	OPENAL_INCLUDE_DIR
+	VORBIS_INCLUDE_DIR
+	OGG_INCLUDE_DIR
+	PostgreSQL_INCLUDE_DIR
+	LEVELDB_INCLUDE_DIR
+	REDIS_INCLUDE_DIR
+	SPATIAL_INCLUDE_DIR
+)
+
 set(INCLUDE_DIRECTORIES_EVERYTHING
 	${PROJECT_BINARY_DIR}
 	${PROJECT_SOURCE_DIR}
@@ -704,7 +727,6 @@ if(BUILD_CLIENT)
 	add_dependencies(${PROJECT_NAME} GenerateVersion)
 	target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIRECTORIES_EVERYTHING})
 	target_link_libraries(${PROJECT_NAME} PUBLIC
-		${GETTEXT_LIBRARY}
 		${LUA_LIBRARY}
 		${GMP_LIBRARY}
 		${JSON_LIBRARY}
@@ -719,6 +741,9 @@ if(BUILD_CLIENT)
 	)
 	if(USE_CURL)
 		target_link_libraries(${PROJECT_NAME} PUBLIC ${CURL_LIBRARY})
+	endif()
+	if(USE_GETTEXT)
+		target_link_libraries(${PROJECT_NAME} PUBLIC ${GETTEXT_LIBRARY})
 	endif()
 	if(USE_FREETYPE)
 		target_link_libraries(${PROJECT_NAME} PUBLIC ${FREETYPE_LIBRARY})
@@ -751,7 +776,6 @@ if(BUILD_SERVER)
 	add_dependencies(${PROJECT_NAME}server GenerateVersion)
 	target_include_directories(${PROJECT_NAME}server PUBLIC ${INCLUDE_DIRECTORIES_EVERYTHING})
 	target_link_libraries(${PROJECT_NAME}server PUBLIC
-		${GETTEXT_LIBRARY}
 		${LUA_LIBRARY}
 		${GMP_LIBRARY}
 		${JSON_LIBRARY}
@@ -761,6 +785,9 @@ if(BUILD_SERVER)
 	)
 	if(USE_CURL)
 		target_link_libraries(${PROJECT_NAME}server PUBLIC ${CURL_LIBRARY})
+	endif()
+	if(USE_GETTEXT)
+		target_link_libraries(${PROJECT_NAME} PUBLIC ${GETTEXT_LIBRARY})
 	endif()
 	if (USE_CURSES)
 		target_link_libraries(${PROJECT_NAME}server ${CURSES_LIBRARIES})
@@ -796,9 +823,9 @@ set_property(TARGET ${PROJECT_NAME} ${PROJECT_NAME}server APPEND_STRING PROPERTY
 )
 set_property(TARGET ${PROJECT_NAME} ${PROJECT_NAME}server APPEND_STRING PROPERTY COMPILE_OPTIONS
 	/D WIN32_LEAN_AND_MEAN /MP
-	$<$<CONFIG:Release>  :/EHa /Ox /GL /FD /MT /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0 /TP>
-	$<$<CONFIG:SemiDebug>:/MDd /Zi /Ob0 /O1 /RTC1>
-	$<$<CONFIG:Debug>    :/MDd /Zi /Ob0 /Od /RTC1>
+	$<$<CONFIG:Release>:   /EHa /Ox /GL /FD /MT /GS- /Zi /fp:fast /D NDEBUG /D _HAS_ITERATOR_DEBUGGING=0 /TP>
+	$<$<CONFIG:SemiDebug>: /MDd /Zi /Ob0 /O1 /RTC1>
+	$<$<CONFIG:Debug>:     /MDd /Zi /Ob0 /Od /RTC1>
 	$<$<EQUAL:${CMAKE_SIZEOF_VOID_P},4>: /arch:SSE>
 )
 set_property(TARGET ${PROJECT_NAME} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE
