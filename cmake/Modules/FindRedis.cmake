@@ -1,0 +1,6 @@
+find_library(REDIS_LIBRARY hiredis)
+find_path(REDIS_INCLUDE_DIR hiredis.h PATH_SUFFIXES hiredis)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Redis DEFAULT_MSG
+	REDIS_LIBRARY REDIS_INCLUDE_DIR)

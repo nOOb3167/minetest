@@ -1,0 +1,6 @@
+find_library(LEVELDB_LIBRARY leveldb)
+find_path(LEVELDB_INCLUDE_DIR db.h PATH_SUFFIXES leveldb)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(LevelDb DEFAULT_MSG
+	LEVELDB_LIBRARY LEVELDB_INCLUDE_DIR)

@@ -1,0 +1,6 @@
+find_library(SPATIAL_LIBRARY spatialindex)
+find_path(SPATIAL_INCLUDE_DIR spatialindex/SpatialIndex.h)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Spatial DEFAULT_MSG
+	SPATIAL_LIBRARY SPATIAL_INCLUDE_DIR)
