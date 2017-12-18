@@ -98,11 +98,11 @@ void * VServThread::run()
 {
 	int r = 0;
 
-	BEGIN_DEBUG_EXCEPTION_HANDLER_();
+	BEGIN_DEBUG_EXCEPTION_HANDLER
 
-	threadfunc(this, mClnt)
+	threadfunc(this, mClnt);
 
-	END_DEBUG_EXCEPTION_HANDLER_();
+	END_DEBUG_EXCEPTION_HANDLER
 
 	this->stop();
 
