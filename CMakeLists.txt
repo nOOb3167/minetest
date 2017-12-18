@@ -200,6 +200,10 @@ if(APPLE)
 	install(FILES "misc/Info.plist" DESTINATION "${BUNDLE_PATH}/Contents")
 endif()
 
+if (MSVC)
+	set(FIXME_STR_CMAKE_C_FLAGS_RELEASE "/O2 /Ob2 /MT")
+endif()
+
 # Library pack
 find_package(GMP REQUIRED)
 find_package(Json REQUIRED)
