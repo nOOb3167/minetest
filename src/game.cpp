@@ -1907,8 +1907,9 @@ bool Game::createClient(const std::string &playername,
 
 	bool could_connect, connect_aborted;
 
-	if (!! gs_vserv_clnt_connect_ident(g_vserv_clnt_ctl, playername.c_str(), address->c_str()))
-		return false;
+	if (g_settings->getBool("enable_vserv_fixme"))
+		if (!! gs_vserv_clnt_connect_ident(g_vserv_clnt_ctl, playername.c_str(), address->c_str()))
+			return false;
 
 	if (!connectToServer(playername, password, address, port,
 			&could_connect, &connect_aborted))
