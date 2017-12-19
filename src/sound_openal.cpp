@@ -418,8 +418,17 @@ public:
 	}
 
 	PlayingSound* createPlayingSound(SoundBuffer *buf, bool loop,
-			float volume, float pitch)
+			float volume, float pitch,
+			double offset_start, double offset_end)
 	{
+		// presumably can infer AL_CHANNELS, AL_BITS, AL_SIZE from SoundBuffer
+		//   but obtaining them directly may be more reliable
+		ALint buf_channels, buf_bits_per_sample, buf_size_bytes;
+		alGetBufferi(buf->buffer_id, AL_CHANNELS, &buf_channels);
+		alGetBufferi(buf->buffer_id, AL_BITS, &buf_bits_per_sample);
+		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
+		const unsigned long SampleOffset = SimpleSoundSpec::convertOffsetToSampleOffset(
+				buf_channels, buf_bits_per_sample, buf_size_bytes, offset_start);
 		infostream<<"OpenALSoundManager: Creating playing sound"<<std::endl;
 		assert(buf);
 		PlayingSound *sound = new PlayingSound;
@@ -434,6 +443,7 @@ public:
 		volume = std::fmax(0.0f, volume);
 		alSourcef(sound->source_id, AL_GAIN, volume);
 		alSourcef(sound->source_id, AL_PITCH, pitch);
+		alSourcei(sound->source_id, AL_SAMPLE_OFFSET, SampleOffset);
 		alSourcePlay(sound->source_id);
 		warn_if_error(alGetError(), "createPlayingSound");
 		return sound;
@@ -468,10 +478,13 @@ public:
 		return sound;
 	}
 
-	int playSoundRaw(SoundBuffer *buf, bool loop, float volume, float pitch)
+	int playSoundRaw(SoundBuffer *buf, bool loop, float volume, float pitch,
+			double offset_start, double offset_end)
 	{
 		assert(buf);
-		PlayingSound *sound = createPlayingSound(buf, loop, volume, pitch);
+		PlayingSound *sound = createPlayingSound(
+				buf, loop, volume, pitch,
+				offset_start, offset_end);
 		if(!sound)
 			return -1;
 		int id = m_next_id++;
@@ -588,7 +601,9 @@ public:
 		alListenerf(AL_GAIN, gain);
 	}
 
-	int playSound(const std::string &name, bool loop, float volume, float fade, float pitch)
+	int playSound(const std::string &name, bool loop, float volume,
+			float fade, float pitch,
+			double offset_start, double offset_end)
 	{
 		maintain();
 		if (name.empty())
@@ -601,10 +616,10 @@ public:
 		}
 		int handle = -1;
 		if (fade > 0) {
-			handle = playSoundRaw(buf, loop, 0.0f, pitch);
+			handle = playSoundRaw(buf, loop, 0.0f, pitch, offset_start, offset_end);
 			fadeSound(handle, fade, volume);
 		} else {
-			handle = playSoundRaw(buf, loop, volume, pitch);
+			handle = playSoundRaw(buf, loop, volume, pitch, offset_start, offset_end);
 		}
 		return handle;
 	}

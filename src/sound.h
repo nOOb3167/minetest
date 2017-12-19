@@ -19,6 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include <cassert>
+
 #include <set>
 #include <string>
 #include "irrlichttypes_bloated.h"
@@ -34,9 +36,11 @@ public:
 struct SimpleSoundSpec
 {
 	SimpleSoundSpec(const std::string &name = "", float gain = 1.0f,
-			float fade = 0.0f, float pitch = 1.0f) :
+			float fade = 0.0f, float pitch = 1.0f,
+			double offset_start = 0.0, double offset_end = 1.0) :
 			name(name),
-			gain(gain), fade(fade), pitch(pitch)
+			gain(gain), fade(fade), pitch(pitch),
+			offset_start(offset_start), offset_end(offset_end)
 	{
 	}
 
@@ -46,6 +50,30 @@ struct SimpleSoundSpec
 	float gain = 1.0f;
 	float fade = 0.0f;
 	float pitch = 1.0f;
+	double offset_start = 0.0;
+	double offset_end   = 1.0;
+
+	static unsigned long convertOffsetToSampleOffset(
+			unsigned long channels, unsigned long bits_per_sample,
+			unsigned long buffer_size_bytes, double offset)
+	{
+		unsigned long Sample = 0;
+
+		if (offset < 0.0)
+			offset = 0.0;
+		if (offset > 1.0)
+			offset = 1.0;
+
+		unsigned long BytesPerSampleFrame = channels * (bits_per_sample / 8);
+
+		// guaranteed by, for example, obtaining bits_per_sample using alBufferi(AL_BITS,...)
+		assert(bits_per_sample == 8 || bits_per_sample == 16);
+		assert(buffer_size_bytes % BytesPerSampleFrame == 0);
+
+		unsigned long NumBufferSampleFrames = buffer_size_bytes / BytesPerSampleFrame;
+
+		return NumBufferSampleFrames * offset;
+	}
 };
 
 class ISoundManager
@@ -67,7 +95,8 @@ public:
 	// playSound functions return -1 on failure, otherwise a handle to the
 	// sound. If name=="", call should be ignored without error.
 	virtual int playSound(const std::string &name, bool loop, float volume,
-			float fade = 0.0f, float pitch = 1.0f) = 0;
+			float fade = 0.0f, float pitch = 1.0f,
+			double offset_start = 0.0, double offset_end = 1.0) = 0;
 	virtual int playSoundAt(const std::string &name, bool loop, float volume, v3f pos,
 			float pitch = 1.0f) = 0;
 	virtual void stopSound(int sound) = 0;
@@ -107,8 +136,9 @@ public:
 	}
 	void updateListener(v3f pos, v3f vel, v3f at, v3f up) {}
 	void setListenerGain(float gain) {}
-	int playSound(const std::string &name, bool loop, float volume, float fade,
-			float pitch)
+	int playSound(const std::string &name, bool loop, float volume,
+			float fade, float pitch,
+			double offset_start, double offset_end)
 	{
 		return 0;
 	}
