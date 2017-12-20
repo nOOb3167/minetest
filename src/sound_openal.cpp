@@ -354,13 +354,11 @@ private:
 	struct EndState {
 		EndState() = default;
 
-		EndState(double endDeltaTime):
-			endDeltaTime(endDeltaTime),
-			accumulatedDeltaTime(0.0)
+		EndState(unsigned long sample_offset_end):
+			sampleOffsetEnd(sample_offset_end)
 		{}
 
-		double endDeltaTime;
-		double accumulatedDeltaTime;
+		unsigned long sampleOffsetEnd;
 	};
 
 	std::unordered_map<int, FadeState> m_sounds_fading;
@@ -493,20 +491,20 @@ public:
 		alGetBufferi(buf->buffer_id, AL_BITS, &buf_bits_per_sample);
 		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
 		alGetBufferi(buf->buffer_id, AL_FREQUENCY, &frequency);
-		const unsigned long sample_offset = SimpleSoundSpec::convertOffsetToSampleOffset(
+		const unsigned long sample_offset_start = SimpleSoundSpec::convertOffsetToSampleOffset(
 			buf_channels, buf_bits_per_sample, buf_size_bytes, offset_start);
-		const unsigned long delta_time = SimpleSoundSpec::convertOffsetRangeToDeltaTime(
-			buf_channels, buf_bits_per_sample, buf_size_bytes, frequency, offset_start, offset_end);
+		const unsigned long sample_offset_end = SimpleSoundSpec::convertOffsetToSampleOffset(
+			buf_channels, buf_bits_per_sample, buf_size_bytes, offset_end);
 
 		PlayingSound *sound = createPlayingSound(
 				buf, loop, volume, pitch,
-				sample_offset);
+				sample_offset_start);
 		if(!sound)
 			return -1;
 		int id = m_next_id++;
 		m_sounds_playing[id] = sound;
-		if (offset_end != 1.0)
-			endingingSound(id, delta_time);
+		if (offset_end != 1.0) // FIXME: what about looping? sample offset will wraparound
+			endingingSound(id, sample_offset_end);
 		return id;
 	}
 
@@ -667,9 +665,9 @@ public:
 		m_sounds_fading[soundid] = FadeState(step, getSoundGain(soundid), gain);
 	}
 
-	void endingingSound(int soundid, double endDeltaTime)
+	void endingingSound(int soundid, unsigned long sample_offset_end)
 	{
-		m_sounds_endinging[soundid] = EndState(endDeltaTime);
+		m_sounds_endinging[soundid] = EndState(sample_offset_end);
 	}
 
 	void doFades(float dtime)
@@ -709,7 +707,16 @@ public:
 			it != m_sounds_endinging.end();
 			/*dummy*/)
 		{
-			if ((it->second.accumulatedDeltaTime += dtime) >= it->second.endDeltaTime) {
+			ALint sample_offset = 0;
+
+			std::unordered_map<int, PlayingSound*>::iterator it2 = m_sounds_playing.find(it->first);
+			if (it2 == m_sounds_playing.end())
+				continue;
+			PlayingSound *sound = it2->second;
+
+			alGetSourcei(sound->source_id, AL_SAMPLE_OFFSET, &sample_offset);
+
+			if (sample_offset >= it->second.sampleOffsetEnd) {
 				stopSound(it->first);
 				it = m_sounds_endinging.erase(it);
 			}

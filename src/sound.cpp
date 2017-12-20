@@ -37,8 +37,8 @@ unsigned long SimpleSoundSpec::convertOffsetToSampleOffset(
 	unsigned long BytesPerSampleFrame = channels * (bits_per_sample / 8);
 	unsigned long NumBufferSampleFrames = buffer_size_bytes / BytesPerSampleFrame;
 	assert(buffer_size_bytes % BytesPerSampleFrame == 0);
-
-	return NumBufferSampleFrames * offset;
+	// -1 as sample frames range [0, NumBufferSampleFrames)
+	return (NumBufferSampleFrames - 1) * offset;
 }
 
 double SimpleSoundSpec::convertOffsetRangeToDeltaTime(
