@@ -703,25 +703,34 @@ public:
 
 	void doEndings(float dtime)
 	{
+		// stopSound may modify m_sounds_playing and invalidate the iterator
+		//   therefore be careful to re-obtain a valid one calling m_sounds_playing.find()
+		std::unordered_map<int, PlayingSound*>::iterator it2;
+
 		for (std::unordered_map<int, EndState>::iterator it = m_sounds_endinging.begin();
 			it != m_sounds_endinging.end();
-			/*dummy*/)
+			/*iterator advances either by result of erase(it) or by it++*/)
 		{
-			ALint sample_offset = 0;
+			it2 = m_sounds_playing.find(it->first);
+			if (it2 != m_sounds_playing.end())
+			{
+				PlayingSound *sound = it2->second;
+				ALint sample_offset = 0;
 
-			std::unordered_map<int, PlayingSound*>::iterator it2 = m_sounds_playing.find(it->first);
-			if (it2 == m_sounds_playing.end())
-				continue;
-			PlayingSound *sound = it2->second;
+				// playing the sound eventually causes sample_offset to raise above sampleOffsetEnd
+				alGetSourcei(sound->source_id, AL_SAMPLE_OFFSET, &sample_offset);
 
-			alGetSourcei(sound->source_id, AL_SAMPLE_OFFSET, &sample_offset);
-
-			if (sample_offset >= it->second.sampleOffsetEnd) {
-				stopSound(it->first);
-				it = m_sounds_endinging.erase(it);
+				// stopSound causes removal from m_sounds_playing
+				if (sample_offset >= it->second.sampleOffsetEnd)
+					stopSound(it->first);
 			}
+
+			// absence from m_sounds_playing eventually cleans up the m_sounds_endingding entry
+			it2 = m_sounds_playing.find(it->first);
+			if (it2 == m_sounds_playing.end())
+				it = m_sounds_endinging.erase(it);
 			else
-				it++;
+				it++;			
 		}
 	}
 
