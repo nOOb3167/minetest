@@ -1030,6 +1030,10 @@ void push_soundspec(lua_State *L, const SimpleSoundSpec &spec)
 	lua_setfield(L, -2, "fade");
 	lua_pushnumber(L, spec.pitch);
 	lua_setfield(L, -2, "pitch");
+	lua_pushnumber(L, spec.offset_start);
+	lua_setfield(L, -2, "offset_start");
+	lua_pushnumber(L, spec.offset_end);
+	lua_setfield(L, -2, "offset_end");
 }
 
 /******************************************************************************/

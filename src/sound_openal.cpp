@@ -351,8 +351,20 @@ private:
 		float current_gain;
 		float target_gain;
 	};
+	struct EndState {
+		EndState() = default;
+
+		EndState(double endDeltaTime):
+			endDeltaTime(endDeltaTime),
+			accumulatedDeltaTime(0.0)
+		{}
+
+		double endDeltaTime;
+		double accumulatedDeltaTime;
+	};
 
 	std::unordered_map<int, FadeState> m_sounds_fading;
+	std::unordered_map<int, EndState> m_sounds_endinging;
 	float m_fade_delay;
 public:
 	OpenALSoundManager(OpenALSoundManagerGlobal *mgoal, OnDemandSoundFetcher *fetcher):
@@ -391,6 +403,7 @@ public:
 	void step(float dtime)
 	{
 		doFades(dtime);
+		doEndings(dtime);
 	}
 
 	void addBuffer(const std::string &name, SoundBuffer *buf)
@@ -418,17 +431,8 @@ public:
 	}
 
 	PlayingSound* createPlayingSound(SoundBuffer *buf, bool loop,
-			float volume, float pitch,
-			double offset_start, double offset_end)
+			float volume, float pitch, unsigned long sample_offset)
 	{
-		// presumably can infer AL_CHANNELS, AL_BITS, AL_SIZE from SoundBuffer
-		//   but obtaining them directly may be more reliable
-		ALint buf_channels, buf_bits_per_sample, buf_size_bytes;
-		alGetBufferi(buf->buffer_id, AL_CHANNELS, &buf_channels);
-		alGetBufferi(buf->buffer_id, AL_BITS, &buf_bits_per_sample);
-		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
-		const unsigned long SampleOffset = SimpleSoundSpec::convertOffsetToSampleOffset(
-				buf_channels, buf_bits_per_sample, buf_size_bytes, offset_start);
 		infostream<<"OpenALSoundManager: Creating playing sound"<<std::endl;
 		assert(buf);
 		PlayingSound *sound = new PlayingSound;
@@ -443,7 +447,7 @@ public:
 		volume = std::fmax(0.0f, volume);
 		alSourcef(sound->source_id, AL_GAIN, volume);
 		alSourcef(sound->source_id, AL_PITCH, pitch);
-		alSourcei(sound->source_id, AL_SAMPLE_OFFSET, SampleOffset);
+		alSourcei(sound->source_id, AL_SAMPLE_OFFSET, sample_offset);
 		alSourcePlay(sound->source_id);
 		warn_if_error(alGetError(), "createPlayingSound");
 		return sound;
@@ -482,13 +486,27 @@ public:
 			double offset_start, double offset_end)
 	{
 		assert(buf);
+		// presumably can infer AL_CHANNELS, AL_BITS, AL_SIZE from SoundBuffer
+		//   but obtaining them directly may be more reliable
+		ALint buf_channels, buf_bits_per_sample, buf_size_bytes, frequency;
+		alGetBufferi(buf->buffer_id, AL_CHANNELS, &buf_channels);
+		alGetBufferi(buf->buffer_id, AL_BITS, &buf_bits_per_sample);
+		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
+		alGetBufferi(buf->buffer_id, AL_FREQUENCY, &frequency);
+		const unsigned long sample_offset = SimpleSoundSpec::convertOffsetToSampleOffset(
+			buf_channels, buf_bits_per_sample, buf_size_bytes, offset_start);
+		const unsigned long delta_time = SimpleSoundSpec::convertOffsetRangeToDeltaTime(
+			buf_channels, buf_bits_per_sample, buf_size_bytes, frequency, offset_start, offset_end);
+
 		PlayingSound *sound = createPlayingSound(
 				buf, loop, volume, pitch,
-				offset_start, offset_end);
+				sample_offset);
 		if(!sound)
 			return -1;
 		int id = m_next_id++;
 		m_sounds_playing[id] = sound;
+		if (offset_end != 1.0)
+			endingingSound(id, delta_time);
 		return id;
 	}
 
@@ -649,6 +667,11 @@ public:
 		m_sounds_fading[soundid] = FadeState(step, getSoundGain(soundid), gain);
 	}
 
+	void endingingSound(int soundid, double endDeltaTime)
+	{
+		m_sounds_endinging[soundid] = EndState(endDeltaTime);
+	}
+
 	void doFades(float dtime)
 	{
 		m_fade_delay += dtime;
@@ -678,6 +701,21 @@ public:
 			}
 		}
 		m_fade_delay = 0;
+	}
+
+	void doEndings(float dtime)
+	{
+		for (std::unordered_map<int, EndState>::iterator it = m_sounds_endinging.begin();
+			it != m_sounds_endinging.end();
+			/*dummy*/)
+		{
+			if ((it->second.accumulatedDeltaTime += dtime) >= it->second.endDeltaTime) {
+				stopSound(it->first);
+				it = m_sounds_endinging.erase(it);
+			}
+			else
+				it++;
+		}
 	}
 
 	bool soundExists(int sound)

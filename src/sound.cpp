@@ -24,3 +24,33 @@ DummySoundManager       dummySoundManager;
 DummySoundManagerGlobal dummySoundManagerGlobal;
 
 ISoundManagerGlobal *g_sound_manager_global = NULL;
+
+unsigned long SimpleSoundSpec::convertOffsetToSampleOffset(
+	unsigned long channels, unsigned long bits_per_sample,
+	unsigned long buffer_size_bytes, double offset)
+{
+	if (offset < 0.0)
+		offset = 0.0;
+	if (offset > 1.0)
+		offset = 1.0;
+
+	unsigned long BytesPerSampleFrame = channels * (bits_per_sample / 8);
+	unsigned long NumBufferSampleFrames = buffer_size_bytes / BytesPerSampleFrame;
+	assert(buffer_size_bytes % BytesPerSampleFrame == 0);
+
+	return NumBufferSampleFrames * offset;
+}
+
+double SimpleSoundSpec::convertOffsetRangeToDeltaTime(
+	unsigned long channels, unsigned long bits_per_sample,
+	unsigned long buffer_size_bytes, unsigned long frequency,
+	double offset_start, double offset_end)
+{
+	const unsigned long SampleOffsetStart = convertOffsetToSampleOffset(
+		channels, bits_per_sample, buffer_size_bytes, offset_start);
+	const unsigned long SampleOffsetEnd = convertOffsetToSampleOffset(
+		channels, bits_per_sample, buffer_size_bytes, offset_end);
+	const unsigned long DeltaSamples = SampleOffsetEnd - SampleOffsetStart;
+	const double DeltaTime = (double) DeltaSamples / frequency;
+	return DeltaTime;
+}

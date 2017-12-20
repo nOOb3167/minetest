@@ -55,25 +55,11 @@ struct SimpleSoundSpec
 
 	static unsigned long convertOffsetToSampleOffset(
 			unsigned long channels, unsigned long bits_per_sample,
-			unsigned long buffer_size_bytes, double offset)
-	{
-		unsigned long Sample = 0;
-
-		if (offset < 0.0)
-			offset = 0.0;
-		if (offset > 1.0)
-			offset = 1.0;
-
-		unsigned long BytesPerSampleFrame = channels * (bits_per_sample / 8);
-
-		// guaranteed by, for example, obtaining bits_per_sample using alBufferi(AL_BITS,...)
-		assert(bits_per_sample == 8 || bits_per_sample == 16);
-		assert(buffer_size_bytes % BytesPerSampleFrame == 0);
-
-		unsigned long NumBufferSampleFrames = buffer_size_bytes / BytesPerSampleFrame;
-
-		return NumBufferSampleFrames * offset;
-	}
+			unsigned long buffer_size_bytes, double offset);
+	static double convertOffsetRangeToDeltaTime(
+			unsigned long channels, unsigned long bits_per_sample,
+			unsigned long buffer_size_bytes, unsigned long frequency,
+			double offset_start, double offset_end);
 };
 
 class ISoundManager
