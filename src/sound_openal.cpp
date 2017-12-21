@@ -481,7 +481,7 @@ public:
 	}
 
 	int playSoundRaw(SoundBuffer *buf, bool loop, float volume, float pitch,
-			double offset_start, double offset_end)
+			float offset_start, float offset_end)
 	{
 		assert(buf);
 		// presumably can infer AL_CHANNELS, AL_BITS, AL_SIZE from SoundBuffer
@@ -492,9 +492,9 @@ public:
 		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
 		alGetBufferi(buf->buffer_id, AL_FREQUENCY, &frequency);
 		const unsigned long sample_offset_start = SimpleSoundSpec::convertOffsetToSampleOffset(
-			buf_channels, buf_bits_per_sample, buf_size_bytes, offset_start);
+			buf_channels, buf_bits_per_sample, frequency, buf_size_bytes, offset_start);
 		const unsigned long sample_offset_end = SimpleSoundSpec::convertOffsetToSampleOffset(
-			buf_channels, buf_bits_per_sample, buf_size_bytes, offset_end);
+			buf_channels, buf_bits_per_sample, frequency, buf_size_bytes, offset_end);
 
 		PlayingSound *sound = createPlayingSound(
 				buf, loop, volume, pitch,
@@ -619,7 +619,7 @@ public:
 
 	int playSound(const std::string &name, bool loop, float volume,
 			float fade, float pitch,
-			double offset_start, double offset_end)
+			float offset_start, float offset_end)
 	{
 		maintain();
 		if (name.empty())
