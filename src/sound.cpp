@@ -40,17 +40,3 @@ unsigned long SimpleSoundSpec::convertOffsetToSampleOffset(
 		SampleFrameOfOffset = NumBufferSampleFrames - 1;
 	return rangelim(SampleFrameOfOffset, 0, NumBufferSampleFrames - 1);
 }
-
-double SimpleSoundSpec::convertOffsetRangeToDeltaTime(
-	unsigned long channels, unsigned long bits_per_sample,
-	unsigned long buffer_size_bytes, unsigned long frequency,
-	double offset_start, double offset_end)
-{
-	const unsigned long SampleOffsetStart = convertOffsetToSampleOffset(
-		channels, bits_per_sample, frequency, buffer_size_bytes, offset_start);
-	const unsigned long SampleOffsetEnd = convertOffsetToSampleOffset(
-		channels, bits_per_sample, frequency, buffer_size_bytes, offset_end);
-	const unsigned long DeltaSamples = SampleOffsetEnd - SampleOffsetStart;
-	const double DeltaTime = (double) DeltaSamples / frequency;
-	return DeltaTime;
-}

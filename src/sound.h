@@ -56,10 +56,6 @@ struct SimpleSoundSpec
 	static unsigned long convertOffsetToSampleOffset(
 			unsigned long channels, unsigned long bits_per_sample, unsigned long frequency,
 			unsigned long buffer_size_bytes, double offset);
-	static double convertOffsetRangeToDeltaTime(
-			unsigned long channels, unsigned long bits_per_sample,
-			unsigned long buffer_size_bytes, unsigned long frequency,
-			double offset_start, double offset_end);
 };
 
 class ISoundManager
