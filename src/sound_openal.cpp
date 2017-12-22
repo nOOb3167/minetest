@@ -734,8 +734,7 @@ public:
 			it != m_sounds_endinging.end();
 			/*iterator advances either by result of erase(it) or by it++*/)
 		{
-			it2 = m_sounds_playing.find(it->first);
-			if (it2 != m_sounds_playing.end())
+			if ((it2 = m_sounds_playing.find(it->first)) != m_sounds_playing.end())
 			{
 				PlayingSound *sound = it2->second;
 				ALint sample_offset = 0;
@@ -749,8 +748,7 @@ public:
 			}
 
 			// absence from m_sounds_playing eventually cleans up the m_sounds_endingding entry
-			it2 = m_sounds_playing.find(it->first);
-			if (it2 == m_sounds_playing.end())
+			if ((it2 = m_sounds_playing.find(it->first)) == m_sounds_playing.end())
 				it = m_sounds_endinging.erase(it);
 			else
 				it++;			
