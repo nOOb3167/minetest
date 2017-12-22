@@ -111,6 +111,36 @@ struct SoundBuffer
 	std::vector<char> buffer;
 };
 
+int sound_buffer_channels(SoundBuffer *SoundBuffer)
+{
+	switch(SoundBuffer->format) {
+	case AL_FORMAT_MONO8:
+		return 1;
+	case AL_FORMAT_MONO16:
+		return 1;
+	case AL_FORMAT_STEREO8:
+		return 2;
+	case AL_FORMAT_STEREO16:
+		return 2;
+	}
+	return 0;
+}
+
+int sound_buffer_bits_per_sample(SoundBuffer *SoundBuffer)
+{
+	switch (SoundBuffer->format) {
+	case AL_FORMAT_MONO8:
+		return 8;
+	case AL_FORMAT_MONO16:
+		return 16;
+	case AL_FORMAT_STEREO8:
+		return 8;
+	case AL_FORMAT_STEREO16:
+		return 16;
+	}
+	return 0;
+}
+
 SoundBuffer *load_opened_ogg_file(OggVorbis_File *oggFile,
 		const std::string &filename_for_logging)
 {
@@ -484,17 +514,10 @@ public:
 			float offset_start, float offset_end)
 	{
 		assert(buf);
-		// presumably can infer AL_CHANNELS, AL_BITS, AL_SIZE from SoundBuffer
-		//   but obtaining them directly may be more reliable
-		ALint buf_channels, buf_bits_per_sample, buf_size_bytes, frequency;
-		alGetBufferi(buf->buffer_id, AL_CHANNELS, &buf_channels);
-		alGetBufferi(buf->buffer_id, AL_BITS, &buf_bits_per_sample);
-		alGetBufferi(buf->buffer_id, AL_SIZE, &buf_size_bytes);
-		alGetBufferi(buf->buffer_id, AL_FREQUENCY, &frequency);
 		const unsigned long sample_offset_start = SimpleSoundSpec::convertOffsetToSampleOffset(
-			buf_channels, buf_bits_per_sample, frequency, buf_size_bytes, offset_start);
+			sound_buffer_channels(buf), sound_buffer_bits_per_sample(buf), buf->freq, buf->buffer.size(), offset_start);
 		const unsigned long sample_offset_end = SimpleSoundSpec::convertOffsetToSampleOffset(
-			buf_channels, buf_bits_per_sample, frequency, buf_size_bytes, offset_end);
+			sound_buffer_channels(buf), sound_buffer_bits_per_sample(buf), buf->freq, buf->buffer.size(), offset_end);
 
 		PlayingSound *sound = createPlayingSound(
 				buf, loop, volume, pitch,
@@ -503,7 +526,7 @@ public:
 			return -1;
 		int id = m_next_id++;
 		m_sounds_playing[id] = sound;
-		if (offset_end != 1.0) // FIXME: what about looping? sample offset will wraparound
+		if (offset_end != 1.0)
 			endingingSound(id, sample_offset_end);
 		return id;
 	}
