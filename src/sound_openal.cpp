@@ -526,7 +526,7 @@ public:
 			return -1;
 		int id = m_next_id++;
 		m_sounds_playing[id] = sound;
-		if (offset_end != 1.0)
+		if (offset_end != -1.0)
 			endingingSound(id, sample_offset_end);
 		return id;
 	}
