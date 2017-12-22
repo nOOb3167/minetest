@@ -91,7 +91,8 @@ public:
 
 	int playSound(const SimpleSoundSpec &spec, bool loop)
 	{
-		return playSound(spec.name, loop, spec.gain, spec.fade, spec.pitch);
+		return playSound(spec.name, loop, spec.gain, spec.fade, spec.pitch,
+				spec.offset_start, spec.offset_end);
 	}
 	int playSoundAt(const SimpleSoundSpec &spec, bool loop, const v3f &pos)
 	{
