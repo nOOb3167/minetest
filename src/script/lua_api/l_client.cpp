@@ -248,7 +248,9 @@ int ModApiClient::l_sound_play(lua_State *L)
 		}
 	}
 
-	handle = sound->playSound(spec.name, looped, gain * spec.gain, 0.0f, pitch);
+	handle = sound->playSound(
+			spec.name, looped, gain * spec.gain, 0.0f, pitch,
+			spec.offset_start, spec.offset_end);
 	lua_pushinteger(L, handle);
 
 	return 1;
