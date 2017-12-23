@@ -77,8 +77,9 @@ public:
 	virtual int playSound(const std::string &name, bool loop, float volume,
 			float fade = 0.0f, float pitch = 1.0f,
 			float offset_start = 0.0f, float offset_end = -1.0f) = 0;
-	virtual int playSoundAt(const std::string &name, bool loop, float volume, v3f pos,
-			float pitch = 1.0f) = 0;
+	virtual int playSoundAt(const std::string &name, bool loop, float volume,
+			v3f pos, float pitch = 1.0f,
+			float offset_start = 0.0f, float offset_end = -1.0f) = 0;
 	virtual void stopSound(int sound) = 0;
 	virtual bool soundExists(int sound) = 0;
 	virtual void updateSoundPosition(int sound, v3f pos) = 0;
@@ -117,8 +118,9 @@ public:
 	{
 		return 0;
 	}
-	int playSoundAt(const std::string &name, bool loop, float volume, v3f pos,
-			float pitch)
+	int playSoundAt(const std::string &name, bool loop, float volume,
+			v3f pos, float pitch,
+			float offset_start, float offset_end)
 	{
 		return 0;
 	}

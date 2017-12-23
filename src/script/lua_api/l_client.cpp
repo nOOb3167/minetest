@@ -242,7 +242,8 @@ int ModApiClient::l_sound_play(lua_State *L)
 			v3f pos = read_v3f(L, -1) * BS;
 			lua_pop(L, 1);
 			handle = sound->playSoundAt(
-					spec.name, looped, gain * spec.gain, pos, pitch);
+					spec.name, looped, gain * spec.gain, pos, pitch,
+					spec.offset_start, spec.offset_end);
 			lua_pushinteger(L, handle);
 			return 1;
 		}

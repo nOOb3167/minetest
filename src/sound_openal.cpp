@@ -457,7 +457,7 @@ public:
 	}
 
 	PlayingSound* createPlayingSoundAt(SoundBuffer *buf, bool loop,
-			float volume, v3f pos, float pitch)
+			float volume, v3f pos, float pitch, unsigned long sample_offset)
 	{
 		infostream<<"OpenALSoundManager: Creating positional playing sound"
 				<<std::endl;
@@ -480,6 +480,7 @@ public:
 		volume = std::fmax(0.0f, volume * 3.0f);
 		alSourcef(sound->source_id, AL_GAIN, volume);
 		alSourcef(sound->source_id, AL_PITCH, pitch);
+		alSourcei(sound->source_id, AL_SAMPLE_OFFSET, sample_offset);
 		alSourcePlay(sound->source_id);
 		warn_if_error(alGetError(), "createPlayingSoundAt");
 		return sound;
@@ -506,15 +507,26 @@ public:
 		return id;
 	}
 
-	int playSoundRawAt(SoundBuffer *buf, bool loop, float volume, const v3f &pos,
-			float pitch)
+	int playSoundRawAt(SoundBuffer *buf, bool loop, float volume,
+		const v3f &pos, float pitch,
+		float offset_start, float offset_end)
 	{
 		assert(buf);
-		PlayingSound *sound = createPlayingSoundAt(buf, loop, volume, pos, pitch);
+
+		const unsigned long sample_offset_start = SimpleSoundSpec::convertOffsetToSampleOffset(
+			sound_buffer_channels(buf), sound_buffer_bits_per_sample(buf), buf->freq, buf->buffer.size(), offset_start);
+		const unsigned long sample_offset_end = SimpleSoundSpec::convertOffsetToSampleOffset(
+			sound_buffer_channels(buf), sound_buffer_bits_per_sample(buf), buf->freq, buf->buffer.size(), offset_end);
+
+		PlayingSound *sound = createPlayingSoundAt(
+				buf, loop, volume, pos, pitch,
+				sample_offset_start);
 		if(!sound)
 			return -1;
 		int id = m_next_id++;
 		m_sounds_playing[id] = sound;
+		if (offset_end != -1.0)
+			endingingSound(id, sample_offset_end);
 		return id;
 	}
 
@@ -638,7 +650,9 @@ public:
 		return handle;
 	}
 
-	int playSoundAt(const std::string &name, bool loop, float volume, v3f pos, float pitch)
+	int playSoundAt(const std::string &name, bool loop, float volume,
+			v3f pos, float pitch,
+			float offset_start, float offset_end)
 	{
 		maintain();
 		if (name.empty())
@@ -649,7 +663,7 @@ public:
 					<<std::endl;
 			return -1;
 		}
-		return playSoundRawAt(buf, loop, volume, pos, pitch);
+		return playSoundRawAt(buf, loop, volume, pos, pitch, offset_start, offset_end);
 	}
 
 	void stopSound(int sound)
