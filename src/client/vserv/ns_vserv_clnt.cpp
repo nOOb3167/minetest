@@ -1,0 +1,594 @@
+#include <cassert>
+#include <cstdint>
+
+#include <memory>
+#include <random>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include <network/address.h>
+#include <network/networkpacket.h>
+#include <network/socket.h>
+#include <porting.h>
+#include <threading/thread.h>
+#include <util/basic_macros.h>
+
+#include <client/vserv/ns_vserv_clnt.h>
+#include <client/vserv/ns_vserv_clnt_iface.h>
+#include <client/vserv/ns_vserv_openal_include.h>
+
+// FIXME: defined here for now
+VServClntCtl *g_vserv_clnt_ctl = NULL;
+
+// FIXME: temp global data
+static uint8_t g_buf_silence_dummy[2 * (GS_48KHZ / 1000 * GS_OPUS_FRAME_DURATION_20MS)] = {};
+
+// FIXME: duplicated from sound_openal.cpp
+static const char *alErrorString(ALenum err)
+{
+	switch (err) {
+	case AL_NO_ERROR:
+		return "no error";
+	case AL_INVALID_NAME:
+		return "invalid name";
+	case AL_INVALID_ENUM:
+		return "invalid enum";
+	case AL_INVALID_VALUE:
+		return "invalid value";
+	case AL_INVALID_OPERATION:
+		return "invalid operation";
+	case AL_OUT_OF_MEMORY:
+		return "out of memory";
+	default:
+		return "<unknown OpenAL error>";
+	}
+}
+
+// FIXME: duplicated from sound_openal.cpp
+static ALenum warn_if_error(ALenum err, const char *desc)
+{
+	if (err == AL_NO_ERROR)
+		return err;
+	warningstream << desc << ": " << alErrorString(err) << std::endl;
+	return err;
+}
+
+GsRenamer::GsRenamer(const std::string &name_want, const std::string &serv_want, long long timestamp, uint32_t rand):
+	m_name_want(name_want),
+	m_serv_want(serv_want),
+	m_timestamp_last_requested(timestamp),
+	m_rand_last_requested(rand)
+{}
+
+bool GsRenamer::matchingRand(uint32_t rand)
+{
+	return m_rand_last_requested == rand;
+}
+
+bool GsRenamer::isWanted()
+{
+	assert(m_name_want.empty() == m_serv_want.empty());
+	return !m_name_want.empty() && !m_serv_want.empty();
+}
+
+void GsRenamer::identEmit(NetworkPacket *packet)
+{
+	*packet << (uint8_t)GS_VSERV_CMD_IDENT << m_rand_last_requested << m_name_want.size() << m_serv_want.size() << m_name_want.c_str() << m_serv_want.c_str();
+}
+
+void GsRenamer::update(long long timestamp)
+{
+	/* no update work needed at all */
+	if (!isWanted())
+		return;
+
+	/* update work needed - but not yet */
+	if (timestamp < m_timestamp_last_requested + GS_CLNT_ARBITRARY_IDENT_RESEND_TIMEOUT)
+		return;
+
+	NetworkPacket packet;
+
+	identEmit(&packet);
+
+	// FIXME: SEND
+	//if (!!(r = gs_vserv_clnt_send(Clnt, Packet.data, Packet.dataLength)))
+	//	GS_GOTO_CLEAN();
+
+	m_timestamp_last_requested = timestamp;
+}
+
+void GsRenamer::reset()
+{
+	m_name_want.clear();
+	m_serv_want.clear();
+}
+
+GsName GsRenamer::wantedName(uint16_t id)
+{
+	GsName name;
+	name.m_name = m_name_want;
+	name.m_serv = m_serv_want;
+	name.m_id = id;
+	return name;
+}
+
+void GsPinger::update(long long timestamp)
+{
+	if (timestamp < m_timestamp_last_ping + GS_PINGER_REQUEST_INTERVAL_MS)
+		return;
+
+	NetworkPacket packet;
+
+	packet << (uint8_t) GS_VSERV_CMD_PING;
+
+	// FIXME: SEND
+	//if (!!(r = gs_vserv_clnt_send(Clnt, Packet.data, Packet.dataLength)))
+	//	GS_GOTO_CLEAN();
+
+	m_timestamp_last_ping = timestamp;
+}
+
+GsRecord::GsRecord():
+	// FIXME: configurable device selection wanted
+	m_cap_device(alcCaptureOpenDevice(NULL, GS_48KHZ, AL_FORMAT_MONO16, GS_RECORD_ARBITRARY_BUFFER_SAMPLES_NUM), deleteDevice)
+{
+	if (! m_cap_device)
+		throw std::runtime_error("OpenAL capture open");
+}
+
+void GsRecord::start()
+{
+	alcCaptureStart(m_cap_device.get());
+	warn_if_error(alGetError(), "OpenAL capture start");
+}
+
+void GsRecord::stop()
+{
+	alcCaptureStop(m_cap_device.get());
+	warn_if_error(alGetError(), "OpenAL capture stop");
+}
+
+void GsRecord::captureDrain(size_t SampSize, size_t FraNumSamp, std::string *FraBuf)
+{
+	/*
+	* OpenAL alcGetIntegerv exposes the count of new samples arrived, but not yet delivered via alcCaptureSamples.
+	*   this count grows during an ongoing capture (ex started via alcCaptureStart).
+	* we want samples delivered in blocks of certain size.
+	*   (specifically blocks of size of an Opus frame, see calculation of 'OpFraNumSamp'.
+	*    Opus supports only specific Opus frame sizes, 20ms hardcoded.
+	*    https://wiki.xiph.org/Opus_Recommended_Settings : Quote "Opus can encode frames of 2.5, 5, 10, 20, 40, or 60 ms.")
+	* if this function keeps getting called during an ongoing capture, alcGetIntegerv eventually will report enough samples to fill one or more Opus frames.
+	*/
+
+	// FIXME: apply fix once opus becomes used
+	typedef ALshort should_be_opus_int16_tho;
+
+	/* the values are hardcoded for 1 channel (mono) (ex for 2 channels a 'sample' is actually two individual ALshort or opus_int16 values) */
+	const size_t AlSampSize = sizeof(ALshort); /*AL_FORMAT_MONO16*/
+	const size_t OpSampSize = sizeof(should_be_opus_int16_tho); /*opus_encode API doc*/
+	const size_t OpFraNumSamp = GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM;
+	const size_t OpFraSize = OpFraNumSamp * OpSampSize;
+	assert(SampSize == OpSampSize && OpSampSize == AlSampSize);
+	assert(FraNumSamp == OpFraNumSamp);
+
+	ALCint NumAvailSamp = 0;
+	size_t NumAvailFraAl = 0;
+	size_t NumAvailFraBuf = 0;
+	size_t NumFraToProcess = 0;
+
+	alcGetIntegerv(m_cap_device.get(), ALC_CAPTURE_SAMPLES, 1, &NumAvailSamp);
+
+	warn_if_error(alGetError(), "OpenAL capture samples query");
+
+	NumAvailFraAl = (NumAvailSamp / OpFraNumSamp); /*truncating division*/
+	NumAvailFraBuf = (FraBuf->size() / OpFraSize);     /*truncating division*/
+	NumFraToProcess = MYMIN(NumAvailFraAl, NumAvailFraBuf);
+
+	if (NumFraToProcess == 0)
+		return;
+
+	/* capture a single frame (call this function in a loop..) */
+
+	FraBuf->resize(1 * OpFraSize);
+
+	alcCaptureSamples(m_cap_device.get(), (void *) FraBuf->data(), 1 * OpFraNumSamp);
+
+	warn_if_error(alGetError(), "OpenAL capture samples");
+}
+
+void GsRecord::deleteDevice(ALCdevice *device)
+{
+	if (device)
+		if (!alcCaptureCloseDevice(device))
+			assert(0);
+}
+
+GsPlayBack::GsPlayBack() = default;
+
+void GsPlayBack::packetInsert(long long timestamp, uint16_t id, uint16_t blk, uint16_t seq,
+		const char *data, size_t len_data)
+{
+	const PBFlowKey key = { id, blk };
+
+	auto itId = m_map_id.find(id);
+
+	if (itId == m_map_id.end())
+		itId = (m_map_id.insert(std::make_pair(id, PBId()))).first;
+
+	if (blk < itId->second.m_blk_floor)
+		return;
+
+	{
+		auto it1 = m_map_flow.find(key);
+
+		if (it1 == m_map_flow.end()) {
+			/* this is the first packet seen from this flow */
+			if (seq > GS_PLAYBACK_FLOW_LEADING_SEQUENCE_LOSS_THRESHOLD) {
+				/* if such a first packet arrives with a high Seq number
+					we can assume the earlier Seq got lost, somehow otherwise will not be arriving,
+					or at the very least be severely outdated the moment they would of been received.
+					ATM the known non-failure path known to cause such high Seq number is
+					a client connecting to the voice server during an ongoing long-running
+					flow. The client, having just connected, is guaranteed to miss the
+					earlier Seq. First packet received of the long-running flow will have high Seq.
+					Two ways of handling such high Seq scenarios were considered:
+					    - play the flow as usual (low Seq considered packet-loss)
+					    leads to a severe time lag between recording and eventual playback of the affected flow.
+					    - drop the flow
+					    ''cant have time lag if you aint ever playing the flow :>''
+					    potentially discards perfectly usable data (rest of the long-running flow)
+					Current handling implemented as drop the flow.
+				*/
+				return;
+			}
+			else {
+				unique_ptr_aluint source(new ALuint(-1), deleteSource);
+				alGenSources(1, source.get());
+				warn_if_error(alGetError(), "PlayBack source creation");
+				it1 = (m_map_flow.insert(std::make_pair(key, PBFlow(std::move(source), timestamp)))).first;
+			}
+		}
+
+		auto it2 = it1->second.m_map_buf.find(seq);
+
+		if (it2 == it1->second.m_map_buf.end()) {
+			std::string buf(data, len_data);
+			it2 = (it1->second.m_map_buf.insert(std::make_pair(seq, std::move(buf)))).first;
+		}
+	}
+}
+
+void GsPlayBack::harvest(long long timestamp, std::vector<std::pair<ALuint, unique_ptr_aluint> > *out_buffer_vec)
+{
+	out_buffer_vec->clear();
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
+		const long long flow_playback_start_time = itFlow->second.m_timestamp_first_receipt + GS_PLAYBACK_FLOW_DELAY_MS;
+		if (timestamp < flow_playback_start_time)
+			continue;
+		const uint16_t seq_current_time = (timestamp - flow_playback_start_time) / GS_OPUS_FRAME_DURATION_20MS;
+		assert(itFlow->second.m_next_seq <= seq_current_time);
+		const size_t count = seq_current_time - itFlow->second.m_next_seq;
+		for (size_t j = 0; j < count; j++) {
+			/* will emit a (ALsource, ALbuffer) pair */
+			unique_ptr_aluint buffer(new ALuint(-1), deleteBuffer);
+			alGenBuffers(1, buffer.get());
+			warn_if_error(alGetError(), "PlayBack buffer creation");
+			/* buffer contents depending on whether we received the data - or are compensating packet loss etc */
+			auto itBuf = itFlow->second.m_map_buf.find(itFlow->second.m_next_seq + j);
+			if (itBuf != itFlow->second.m_map_buf.end()) {
+				alBufferData(*buffer, AL_FORMAT_MONO16, itBuf->second.data(), itBuf->second.size(), GS_48KHZ);
+				warn_if_error(alGetError(), "PlayBack buffer data");
+			}
+			else {
+				alBufferData(*buffer, AL_FORMAT_MONO16, g_buf_silence_dummy, sizeof g_buf_silence_dummy, GS_48KHZ);
+				warn_if_error(alGetError(), "PlayBack buffer data");
+			}
+			out_buffer_vec->push_back(std::make_pair(*itFlow->second.m_source, std::move(buffer)));
+		}
+		itFlow->second.m_next_seq += count;
+	}
+}
+
+void GsPlayBack::harvestAndEnqueue(long long timestamp)
+{
+	std::vector<std::pair<ALuint, unique_ptr_aluint> > buffer_vec;
+
+	harvest(timestamp, &buffer_vec);
+
+	for (size_t i = 0; i < buffer_vec.size(); i++) {
+		alSourceQueueBuffers(buffer_vec[i].first, 1, buffer_vec[i].second.get());
+		warn_if_error(alGetError(), "PlayBack source buffer queue");
+	}
+}
+
+void GsPlayBack::dequeue()
+{
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
+		ALint num_processed = 0;
+		ALuint bufferDummy = -1;
+		do {
+			alGetSourcei(*itFlow->second.m_source, AL_BUFFERS_PROCESSED, &num_processed);
+			warn_if_error(alGetError(), "PlayBack get buffers processed");
+			if (num_processed > 0) {
+				alSourceUnqueueBuffers(*itFlow->second.m_source, num_processed, &bufferDummy);
+				warn_if_error(alGetError(), "PlayBack get buffers processed");
+			}
+		} while (num_processed);
+	}
+}
+
+void GsPlayBack::ensurePlaying()
+{
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
+		ALint state = 0;
+		alGetSourcei(*itFlow->second.m_source, AL_SOURCE_STATE, &state);
+		if (state != AL_PLAYING)
+			alSourcePlay(*itFlow->second.m_source);
+		warn_if_error(alGetError(), "PlayBack get source state");
+	}
+}
+
+void GsPlayBack::expireFlows(long long timestamp)
+{
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
+		if (isLiveFlow(itFlow->first, timestamp)) {
+			/*keep*/
+			++itFlow;
+		}
+		else {
+			/*drop*/
+			itFlow = m_map_flow.erase(itFlow);
+			// FIXME: the correct time for removal of mMapId[Id] is after disconnection of user Id,
+			//        and before Id gets recycled for a new connection.
+			//        ex even if all flows with keys mId=Id are gone from mMapFlow are gone
+			//          more such flows could arrive in the future. if mMapId[Id] were removed,
+			//          its former state would be lost.
+			//// m_map_id.erase(itFlow->first.m_id);
+		}
+	}
+}
+
+bool GsPlayBack::isLiveFlow(const PBFlowKey &key, long long timestamp)
+{
+	auto itFlow = m_map_flow.find(key);
+	/* cant be alive if it aint there */
+	if (itFlow == m_map_flow.end())
+		return false;
+	const long long flow_playback_start_time = itFlow->second.m_timestamp_first_receipt + GS_PLAYBACK_FLOW_DELAY_MS;
+	/* cant be dead it if it aint ever even given a chance to get goin */
+	if (timestamp < flow_playback_start_time)
+		return true;
+	const uint16_t seq_current_time = (timestamp - flow_playback_start_time) / GS_OPUS_FRAME_DURATION_20MS;
+	const auto itLastReceived = itFlow->second.m_map_buf.rbegin();
+	/* check if the flow expired (ie we postulate further packets will either not arrive,
+		or arrive and be too late (ex if we're past 5s into playing a flow and receive a packet
+		carrying data from 1 to 1.050s it is too late to play).
+
+		currently the code count a flow as expired if:
+		    - we are (time-wise) sufficiently past the last arrived/received packet in the flow
+		    - or, should none have arrived, we are sufficiently past the playback start time of that flow
+		sufficiently behind meaning GS_PLAYBACK_FLOW_DELAY_EXPIRY_MS or more msec of delay
+	*/
+	long long expiry_comparison_start_time = flow_playback_start_time;
+	if (itLastReceived != itFlow->second.m_map_buf.rend()) {
+		const uint16_t  seq_last_received = itLastReceived->first;
+		const long long seq_last_received_start_time_offset = seq_last_received * GS_OPUS_FRAME_DURATION_20MS;
+		expiry_comparison_start_time += seq_last_received_start_time_offset;
+	}
+	expiry_comparison_start_time += GS_PLAYBACK_FLOW_DELAY_EXPIRY_MS;
+	if (expiry_comparison_start_time < timestamp)
+		return false;
+	return true;
+}
+
+void GsPlayBack::deleteBuffer(ALuint *buffer)
+{
+	if (*buffer != -1)
+		alDeleteBuffers(1, buffer);
+}
+
+void GsPlayBack::deleteSource(ALuint *source)
+{
+	if (*source != -1)
+		alDeleteSources(1, source);
+}
+
+VServClnt::VServClnt(bool ipv6, uint32_t port, const char *hostname):
+	m_blk(0),
+	m_seq(0),
+	m_name(),
+	m_renamer(new GsRenamer()),
+	m_pinger(new GsPinger()),
+	m_record(new GsRecord()),
+	m_playback(new GsPlayBack()),
+	m_socket(new UDPSocket(ipv6)),
+	m_thread(new VServThread(this)),
+	m_thread_exit_code(0),
+	m_addr(0, 0, 0, 0, port),
+	m_keys(0),
+	m_rand_gen(std::random_device()()),
+	m_rand_dis(std::uniform_int_distribution<uint32_t>())
+{
+	assert(! ipv6);
+	m_socket->Bind(Address((irr::u32)INADDR_ANY, 0));
+	m_addr.Resolve(hostname);
+	m_thread->start();
+}
+
+void VServClnt::threadFunc()
+{
+	uint16_t blk_dummy = 0;
+	long long blk_timestamp_dummy = porting::getTimeMs();
+
+	{
+		while (!g_vserv_clnt_ctl->msgHas())
+			sleep_ms(100);
+		VServClntMsg msg = g_vserv_clnt_ctl->msgPop();
+		assert(msg.m_type == VSERV_CLNT_MSG_TYPE_NAME);
+		ident(msg.m_name.m_name, msg.m_name.m_serv, porting::getTimeMs());
+	}
+
+	long long timestamp_last_run = porting::getTimeMs();
+
+	while (! m_thread->stopRequested()) {
+		uint32_t keys = 0;
+		long long timestamp_before_wait = porting::getTimeMs();
+		bool wait_indicates_data_arrived = 0;
+		if (timestamp_before_wait < timestamp_last_run) /* backwards clock? wtf? */
+			timestamp_before_wait = LLONG_MAX;          /* just ensure processing runs immediately */
+		long long time_remaining_to_full_tick = GS_CLNT_ONE_TICK_MS - MYMIN(timestamp_before_wait - timestamp_last_run, GS_CLNT_ONE_TICK_MS);
+		wait_indicates_data_arrived = m_socket->WaitData(time_remaining_to_full_tick); /* note indication is not actually used */
+		timestamp_last_run = porting::getTimeMs();
+		keys = m_keys.load();
+		// FIXME: temporary testing dummy
+		blk_dummy = (timestamp_last_run - blk_timestamp_dummy) / 3000; /* increment new block every 3s */
+		keys = ('s' << 0) | (blk_dummy << 8);
+		updateOther(timestamp_last_run, keys);
+	}
+}
+
+void VServClnt::ident(const std::string &name_want, const std::string &serv_want, long long timestamp)
+{
+	NetworkPacket packet;
+	uint32_t fresh_rand = m_rand_dis(m_rand_gen);
+	std::unique_ptr<GsRenamer> renamer(new GsRenamer(name_want, serv_want, timestamp, fresh_rand));
+	renamer->identEmit(&packet);
+	//FIXME: send
+	//if (!!(r = gs_vserv_clnt_send(Clnt, PacketOut.data, PacketOut.dataLength)))
+	//	GS_GOTO_CLEAN();
+	m_renamer = std::move(renamer);
+}
+
+void VServClnt::updateOther(long long timestamp, uint32_t keys)
+{
+	Address addr;
+
+	/* recording and network sending of recorded sound data */
+
+	// FIXME: temporary testing dummy
+	m_record->start();
+
+	while (true) {
+		std::string fra_buf;
+		m_record->captureDrain(sizeof (uint16_t), GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM, &fra_buf);
+		if (fra_buf.empty())
+			break;
+		uint8_t mode = (keys >> 0) & 0xFF;
+		uint16_t blk = (keys >> 8) & 0xFFFF;
+	}
+
+	/* network receiving and general network processing
+	        receives sound data (ex accumulates playback with gs_playback_packet_insert) */
+
+	m_pinger->update(timestamp);
+	m_renamer->update(timestamp);
+
+	while (true) {
+		Address addr_from;
+		// the comment below was copied from connectionthreads.cpp as rationale for packet size
+		//   use IPv6 minimum allowed MTU as receive buffer size as this is
+		//   theoretical reliable upper boundary of a udp packet for all IPv6 enabled
+		//   infrastructure
+		const size_t packet_maxsize = 1500;
+		uint8_t packetdata[packet_maxsize];
+		size_t packetsize = 0;
+		if (-1 == (packetsize = m_socket->Receive(addr_from, packetdata, packet_maxsize)))
+			break;
+		processPacket(timestamp, packetdata, packetsize, addr_from);
+	}
+
+	/* processing of received and accumulated playback */
+
+	m_playback->dequeue();
+	m_playback->expireFlows(timestamp);
+	m_playback->harvestAndEnqueue(timestamp);
+	m_playback->ensurePlaying();
+}
+
+void VServClnt::updateRecord(long long timestamp, uint8_t mode, uint16_t blk, const std::string &fra_buf)
+{
+	/* no mode - no send requested */
+	if (mode == GS_VSERV_GROUP_MODE_NONE)
+		return;
+
+	/* fresh blk? use it (also resetting seq) */
+	if (m_blk != blk) {
+		m_blk = blk;
+		m_seq = 0;
+	}
+
+	NetworkPacket packet;
+
+	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq << fra_buf;
+
+	/* commit mSeq */
+	// FIXME: overflow handling (maybe advance blk)
+	m_seq += 1;
+
+	// FIXME: SEND
+	//if (!!(r = gs_vserv_clnt_send(Clnt, PacketOut.data, PacketOut.dataLength)))
+	//	GS_GOTO_CLEAN();
+}
+
+void VServClnt::packetFill(uint8_t *packetdata, size_t packetsize, NetworkPacket *io_packet)
+{
+	// FIXME: inefficient
+	std::unique_ptr<uint8_t[]> pp(new uint8_t[2 + packetsize]);
+	pp[0] = 0; pp[1] = 0;
+	memcpy(pp.get() + 2, packetdata, packetsize);
+	io_packet->putRawPacket(pp.get(), 2 + packetsize, -1);
+}
+
+void VServClnt::processPacket(long long timestamp, uint8_t *packetdata, size_t packetsize, const Address &addr_from)
+{
+	NetworkPacket packet;
+
+	packetFill(packetdata, packetsize, &packet);
+
+	uint8_t cmd = 0;
+
+	packet >> cmd;
+
+	switch (cmd) {
+	case GS_VSERV_CMD_IDENT_ACK:
+	{
+		uint32_t rand = 0;
+		uint16_t id = GS_VSERV_USER_ID_SERVFILL;
+
+		packet >> rand >> id;
+
+		/* unsolicited or reliability-codepath (ex re-sent or reordered packet) GS_VSERV_CMD_IDENT_ACK */
+
+		if (! m_renamer->isWanted() || ! m_renamer->matchingRand(rand))
+			break;
+
+		/* seems legit, apply and reset */
+
+		m_name = m_renamer->wantedName(id);
+		m_renamer->reset();
+	}
+	break;
+
+	case GS_VSERV_CMD_GROUP_MODE_MSG:
+	{
+		uint8_t mode = 0;
+		uint16_t id = 0;
+		uint16_t blk = 0;
+		uint16_t seq = 0;
+
+		packet >> mode >> id >> blk >> seq;
+
+		// FIXME: hmmm but SERVFILL_FIXME is actually a valid uint16_t value / id ?
+		//   prevent generating those (fix ex gs_vserv_user_genid)
+		assert(id != GS_VSERV_USER_ID_SERVFILL);
+
+		m_playback->packetInsert(timestamp, id, blk, seq, packet.getRemainingString(), packet.getRemainingBytes());
+	}
+	break;
+
+	default:
+		assert(0);
+	}
+}

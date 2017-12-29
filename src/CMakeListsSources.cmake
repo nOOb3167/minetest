@@ -356,23 +356,10 @@ set(client_SRCS
 	client/render/stereo.h
 	client/renderingengine.cpp
 	client/renderingengine.h
-	client/vserv/vserv_clnt.cpp
-	client/vserv/vserv_clnt.h
-	client/vserv/vserv_clnt_helpers.h
-	client/vserv/vserv_clnt_iface.h
-	client/vserv/vserv_clnt_test.cpp
-	client/vserv/vserv_helpers.cpp
-	client/vserv/vserv_helpers.h
-	client/vserv/vserv_log.h
-	client/vserv/vserv_misc.h
-	client/vserv/vserv_misc.cpp
-	client/vserv/vserv_openal_include.h
-	client/vserv/vserv_pinger.cpp
-	client/vserv/vserv_pinger.h
-	client/vserv/vserv_playback.cpp
-	client/vserv/vserv_playback.h
-	client/vserv/vserv_record.cpp
-	client/vserv/vserv_record.h
+	client/vserv/ns_vserv_clnt.cpp
+	client/vserv/ns_vserv_clnt.h
+	client/vserv/ns_vserv_clnt_iface.h
+	client/vserv/ns_vserv_openal_include.h
 	client/clientlauncher.cpp
 	client/clientlauncher.h
 	client/inputhandler.cpp

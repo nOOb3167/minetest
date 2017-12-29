@@ -29,7 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/tile.h"     // For TextureSource
 #include "client/keys.h"
 #include "client/joystick_controller.h"
-#include "client/vserv/vserv_clnt_iface.h"
+#include "client/vserv/ns_vserv_clnt_iface.h"
 #include "clientmap.h"
 #include "clouds.h"
 #include "config.h"
@@ -1908,8 +1908,7 @@ bool Game::createClient(const std::string &playername,
 	bool could_connect, connect_aborted;
 
 	if (g_settings->getBool("enable_vserv_fixme"))
-		if (!! gs_vserv_clnt_connect_ident(g_vserv_clnt_ctl, playername.c_str(), address->c_str()))
-			return false;
+		VServClntCtl::s_connect_ident(g_vserv_clnt_ctl, playername.c_str(), address->c_str());
 
 	if (!connectToServer(playername, password, address, port,
 			&could_connect, &connect_aborted))
