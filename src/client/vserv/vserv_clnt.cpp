@@ -166,7 +166,7 @@ int gs_vserv_clnt_crank0(
 		size_t Offset = 0;
 
 		uint32_t Rand = 0;
-		uint32_t Id = GS_VSERV_USER_ID_SERVFILL;
+		uint16_t Id = GS_VSERV_USER_ID_SERVFILL;
 
 		if (gs_packet_space(Packet, (Offset += 1), 4 /*rand*/ + 2 /*id*/))
 			GS_ERR_CLEAN_J(ident_ack, 1);
