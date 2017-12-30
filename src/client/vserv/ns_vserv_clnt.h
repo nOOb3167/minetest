@@ -31,6 +31,24 @@
 #define GS_OPUS_FRAME_DURATION_20MS 20
 #define GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM ((GS_48KHZ / 1000) /*samples/msec*/ * GS_OPUS_FRAME_DURATION_20MS /*20ms (one Opus frame)*/)
 
+class GsSend
+{
+public:
+	GsSend(UDPSocket *sock, Address addr):
+		m_sock(sock),
+		m_addr(addr)
+	{}
+
+	void send(NetworkPacket *packet)
+	{
+		m_sock->Send(m_addr, packet->getU8Ptr(0), packet->getSize());
+	}
+
+private:
+	UDPSocket *m_sock;
+	Address    m_addr;
+};
+
 class GsName
 {
 public:
@@ -50,7 +68,7 @@ public:
 	bool matchingRand(uint32_t rand);
 	bool isWanted();
 	void identEmit(NetworkPacket *packet);
-	void update(long long timestamp);
+	void update(GsSend *send, long long timestamp);
 	void reset();
 	GsName wantedName(uint16_t id);
 
@@ -66,7 +84,7 @@ class GsPinger
 public:
 	GsPinger() = default;
 
-	void update(long long timestamp);
+	void update(GsSend *send, long long timestamp);
 
 private:
 	long long m_timestamp_last_ping = 0;
@@ -179,7 +197,7 @@ public:
 	VServClnt(bool ipv6, uint32_t port, const char *hostname);
 
 	void threadFunc();
-	void ident(const std::string &name_want, const std::string &serv_want, long long timestamp);
+	void ident(GsSend *send, const std::string &name_want, const std::string &serv_want, long long timestamp);
 	void updateOther(long long timestamp, uint32_t keys);
 	void updateRecord(long long timestamp, uint8_t mode, uint16_t blk, const std::string &fra_buf);
 	void packetFill(uint8_t *packetdata, size_t packetsize, NetworkPacket *io_packet);
@@ -196,6 +214,7 @@ private:
 	std::unique_ptr<GsPlayBack> m_playback;
 
 	std::unique_ptr<UDPSocket> m_socket;
+	std::unique_ptr<GsSend>    m_send;
 	std::unique_ptr<VServThread> m_thread;
 	uint32_t m_thread_exit_code;
 	Address m_addr;

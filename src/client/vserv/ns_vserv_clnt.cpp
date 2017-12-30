@@ -78,7 +78,7 @@ void GsRenamer::identEmit(NetworkPacket *packet)
 	*packet << (uint8_t)GS_VSERV_CMD_IDENT << m_rand_last_requested << m_name_want.size() << m_serv_want.size() << m_name_want.c_str() << m_serv_want.c_str();
 }
 
-void GsRenamer::update(long long timestamp)
+void GsRenamer::update(GsSend *send, long long timestamp)
 {
 	/* no update work needed at all */
 	if (!isWanted())
@@ -92,9 +92,7 @@ void GsRenamer::update(long long timestamp)
 
 	identEmit(&packet);
 
-	// FIXME: SEND
-	//if (!!(r = gs_vserv_clnt_send(Clnt, Packet.data, Packet.dataLength)))
-	//	GS_GOTO_CLEAN();
+	send->send(&packet);
 
 	m_timestamp_last_requested = timestamp;
 }
@@ -114,7 +112,7 @@ GsName GsRenamer::wantedName(uint16_t id)
 	return name;
 }
 
-void GsPinger::update(long long timestamp)
+void GsPinger::update(GsSend *send, long long timestamp)
 {
 	if (timestamp < m_timestamp_last_ping + GS_PINGER_REQUEST_INTERVAL_MS)
 		return;
@@ -123,9 +121,7 @@ void GsPinger::update(long long timestamp)
 
 	packet << (uint8_t) GS_VSERV_CMD_PING;
 
-	// FIXME: SEND
-	//if (!!(r = gs_vserv_clnt_send(Clnt, Packet.data, Packet.dataLength)))
-	//	GS_GOTO_CLEAN();
+	send->send(&packet);
 
 	m_timestamp_last_ping = timestamp;
 }
@@ -404,6 +400,7 @@ VServClnt::VServClnt(bool ipv6, uint32_t port, const char *hostname):
 	m_record(new GsRecord()),
 	m_playback(new GsPlayBack()),
 	m_socket(new UDPSocket(ipv6)),
+	m_send(),
 	m_thread(new VServThread(this)),
 	m_thread_exit_code(0),
 	m_addr(0, 0, 0, 0, port),
@@ -414,6 +411,7 @@ VServClnt::VServClnt(bool ipv6, uint32_t port, const char *hostname):
 	assert(! ipv6);
 	m_socket->Bind(Address((irr::u32)INADDR_ANY, 0));
 	m_addr.Resolve(hostname);
+	m_send.reset(new GsSend(m_socket.get(), m_addr));
 	m_thread->start();
 }
 
@@ -427,7 +425,7 @@ void VServClnt::threadFunc()
 			sleep_ms(100);
 		VServClntMsg msg = g_vserv_clnt_ctl->msgPop();
 		assert(msg.m_type == VSERV_CLNT_MSG_TYPE_NAME);
-		ident(msg.m_name.m_name, msg.m_name.m_serv, porting::getTimeMs());
+		ident(m_send.get(), msg.m_name.m_name, msg.m_name.m_serv, porting::getTimeMs());
 	}
 
 	long long timestamp_last_run = porting::getTimeMs();
@@ -449,15 +447,13 @@ void VServClnt::threadFunc()
 	}
 }
 
-void VServClnt::ident(const std::string &name_want, const std::string &serv_want, long long timestamp)
+void VServClnt::ident(GsSend *send, const std::string &name_want, const std::string &serv_want, long long timestamp)
 {
 	NetworkPacket packet;
 	uint32_t fresh_rand = m_rand_dis(m_rand_gen);
 	std::unique_ptr<GsRenamer> renamer(new GsRenamer(name_want, serv_want, timestamp, fresh_rand));
 	renamer->identEmit(&packet);
-	//FIXME: send
-	//if (!!(r = gs_vserv_clnt_send(Clnt, PacketOut.data, PacketOut.dataLength)))
-	//	GS_GOTO_CLEAN();
+	send->send(&packet);
 	m_renamer = std::move(renamer);
 }
 
@@ -482,8 +478,8 @@ void VServClnt::updateOther(long long timestamp, uint32_t keys)
 	/* network receiving and general network processing
 	        receives sound data (ex accumulates playback with gs_playback_packet_insert) */
 
-	m_pinger->update(timestamp);
-	m_renamer->update(timestamp);
+	m_pinger->update(m_send.get(), timestamp);
+	m_renamer->update(m_send.get(), timestamp);
 
 	while (true) {
 		Address addr_from;
@@ -527,9 +523,7 @@ void VServClnt::updateRecord(long long timestamp, uint8_t mode, uint16_t blk, co
 	// FIXME: overflow handling (maybe advance blk)
 	m_seq += 1;
 
-	// FIXME: SEND
-	//if (!!(r = gs_vserv_clnt_send(Clnt, PacketOut.data, PacketOut.dataLength)))
-	//	GS_GOTO_CLEAN();
+	m_send->send(&packet);
 }
 
 void VServClnt::packetFill(uint8_t *packetdata, size_t packetsize, NetworkPacket *io_packet)
