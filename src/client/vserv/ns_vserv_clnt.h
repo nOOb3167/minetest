@@ -31,6 +31,8 @@
 #define GS_OPUS_FRAME_DURATION_20MS 20
 #define GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM ((GS_48KHZ / 1000) /*samples/msec*/ * GS_OPUS_FRAME_DURATION_20MS /*20ms (one Opus frame)*/)
 
+class VServClntCtl;
+
 class GsSend
 {
 public:
@@ -194,7 +196,7 @@ public:
 		VServClnt * m_clnt = NULL;
 	};
 
-	VServClnt(bool ipv6, uint32_t port, const char *hostname);
+	VServClnt(VServClntCtl *ctl, bool ipv6, uint32_t port, const char *hostname);
 
 	void threadFunc();
 	void ident(GsSend *send, const std::string &name_want, const std::string &serv_want, long long timestamp);
@@ -204,6 +206,8 @@ public:
 	void processPacket(long long timestamp, uint8_t *packetdata, size_t packetsize, const Address &addr_from);
 
 private:
+	VServClntCtl * m_ctl = NULL;
+
 	int16_t m_blk = 0;
 	int16_t m_seq = 0;
 

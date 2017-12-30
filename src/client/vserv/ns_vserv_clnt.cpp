@@ -391,7 +391,8 @@ void GsPlayBack::deleteSource(ALuint *source)
 		alDeleteSources(1, source);
 }
 
-VServClnt::VServClnt(bool ipv6, uint32_t port, const char *hostname):
+VServClnt::VServClnt(VServClntCtl *ctl, bool ipv6, uint32_t port, const char *hostname):
+	m_ctl(ctl),
 	m_blk(0),
 	m_seq(0),
 	m_name(),
@@ -421,9 +422,9 @@ void VServClnt::threadFunc()
 	long long blk_timestamp_dummy = porting::getTimeMs();
 
 	{
-		while (!g_vserv_clnt_ctl->msgHas())
+		while (!m_ctl->msgHas())
 			sleep_ms(100);
-		VServClntMsg msg = g_vserv_clnt_ctl->msgPop();
+		VServClntMsg msg = m_ctl->msgPop();
 		assert(msg.m_type == VSERV_CLNT_MSG_TYPE_NAME);
 		ident(m_send.get(), msg.m_name.m_name, msg.m_name.m_serv, porting::getTimeMs());
 	}

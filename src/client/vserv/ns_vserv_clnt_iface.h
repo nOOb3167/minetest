@@ -121,9 +121,9 @@ public:
 		if (g_vserv_clnt_ctl != NULL)
 			throw std::logic_error("vserv global already inited");
 
-		// FIXME: ipv6 false
-		VServClnt *clnt = new VServClnt(false, vserv_port, vserv_hostname);
 		g_vserv_clnt_ctl = new VServClntCtl();
+		// FIXME: ipv6 false
+		VServClnt *clnt = new VServClnt(g_vserv_clnt_ctl, false, vserv_port, vserv_hostname);
 		g_vserv_clnt_ctl->clntSet(clnt);
 	}
 
