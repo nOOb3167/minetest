@@ -75,7 +75,9 @@ bool GsRenamer::isWanted()
 
 void GsRenamer::identEmit(NetworkPacket *packet)
 {
-	*packet << (uint8_t)GS_VSERV_CMD_IDENT << m_rand_last_requested << m_name_want.size() << m_serv_want.size() << m_name_want.c_str() << m_serv_want.c_str();
+	*packet << (uint8_t)GS_VSERV_CMD_IDENT << m_rand_last_requested << (uint32_t) m_name_want.size() << (uint32_t) m_serv_want.size();
+	packet->putRawString(m_name_want);
+	packet->putRawString(m_serv_want);
 }
 
 void GsRenamer::update(GsSend *send, long long timestamp)
@@ -179,15 +181,18 @@ void GsRecord::captureDrain(size_t SampSize, size_t FraNumSamp, std::string *Fra
 	warn_if_error(alGetError(), "OpenAL capture samples query");
 
 	NumAvailFraAl = (NumAvailSamp / OpFraNumSamp); /*truncating division*/
+
+	if (NumAvailFraAl == 0)
+		return;
+
+	FraBuf->resize(1 * OpFraSize);
+
 	NumAvailFraBuf = (FraBuf->size() / OpFraSize);     /*truncating division*/
 	NumFraToProcess = MYMIN(NumAvailFraAl, NumAvailFraBuf);
 
-	if (NumFraToProcess == 0)
-		return;
+	assert(NumFraToProcess == 1);
 
 	/* capture a single frame (call this function in a loop..) */
-
-	FraBuf->resize(1 * OpFraSize);
 
 	alcCaptureSamples(m_cap_device.get(), (void *) FraBuf->data(), 1 * OpFraNumSamp);
 
@@ -474,6 +479,7 @@ void VServClnt::updateOther(long long timestamp, uint32_t keys)
 			break;
 		uint8_t mode = (keys >> 0) & 0xFF;
 		uint16_t blk = (keys >> 8) & 0xFFFF;
+		updateRecord(timestamp, mode, blk, fra_buf);
 	}
 
 	/* network receiving and general network processing
@@ -518,7 +524,8 @@ void VServClnt::updateRecord(long long timestamp, uint8_t mode, uint16_t blk, co
 
 	NetworkPacket packet;
 
-	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq << fra_buf;
+	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq << (uint32_t) fra_buf.size();
+	packet.putRawString(fra_buf);
 
 	/* commit mSeq */
 	// FIXME: overflow handling (maybe advance blk)

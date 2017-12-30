@@ -129,6 +129,8 @@ public:
 
 	static void s_connect_ident(VServClntCtl *ctl, const char *player_name, const char *serv_name)
 	{
+		if (!serv_name || strlen(serv_name) == 0)
+			serv_name = "serv_name_was_empty_dummy";
 		ctl->msgPushName(player_name, serv_name);
 	}
 
