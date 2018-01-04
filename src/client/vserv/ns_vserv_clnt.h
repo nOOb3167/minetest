@@ -13,6 +13,7 @@
 #include <network/address.h>
 #include <network/networkpacket.h>
 #include <network/socket.h>
+#include <threading/thread.h>
 
 #define GS_VSERV_USER_ID_INVALID  0xFFFF
 #define GS_VSERV_USER_ID_SERVFILL 0xFFFF
