@@ -82,7 +82,7 @@ bool ClientLauncher::run(GameParams &game_params, const Settings &cmd_args)
 		g_sound_manager_global = createOpenALSoundManagerGlobal();
 	if (!g_settings->getBool("enable_vserv"))
 		return false;
-	VServClntCtl::s_init(g_settings->getU32("vserv_port"), g_settings->get("vserv_hostname").c_str());
+	VServClntCtl::s_init(g_settings->getU32("vserv_port"), g_settings->getU32("vserv_mgmt_port"), g_settings->get("vserv_hostname").c_str());
 #endif
 
 	if (!init_engine()) {

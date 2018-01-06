@@ -360,6 +360,7 @@ set(client_SRCS
 	client/vserv/ns_vserv_clnt.h
 	client/vserv/ns_vserv_clnt_iface.h
 	client/vserv/ns_vserv_mgmt.cpp
+	client/vserv/ns_vserv_mgmt.h
 	client/vserv/ns_vserv_openal_include.h
 	client/clientlauncher.cpp
 	client/clientlauncher.h

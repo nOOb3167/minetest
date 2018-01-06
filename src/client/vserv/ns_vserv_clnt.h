@@ -25,7 +25,7 @@
 
 #define GS_PINGER_REQUEST_INTERVAL_MS 1000
 #define GS_RECORD_ARBITRARY_BUFFER_SAMPLES_NUM 48000
-#define GS_PLAYBACK_FLOW_DELAY_EXPIRY_MS (GS_OPUS_FRAME_DURATION_20MS * 3) /* three opus frames */
+#define GS_PLAYBACK_FLOW_DELAY_EXPIRY_MS (GS_OPUS_FRAME_DURATION_20MS * 3 * 2)  // FIXME: adjust expiry
 #define GS_PLAYBACK_FLOW_LEADING_SEQUENCE_LOSS_THRESHOLD (50 * 3) /* at 20ms there are 50 frames per second. (50*3) designating 3s of continued loss */
 #define GS_PLAYBACK_FLOW_DELAY_MS 50
 
@@ -125,7 +125,7 @@ public:
 	{
 		bool operator()(const PBFlowKey &a, const PBFlowKey &b) const
 		{
-			return a.m_id != b.m_id ? (a.m_id < b.m_id) : (a.m_id < b.m_id);
+			return a.m_id != b.m_id ? (a.m_id < b.m_id) : (a.m_blk < b.m_blk);
 		}
 	};
 

@@ -254,7 +254,7 @@ if(BUILD_CLIENT)
 		${JPEG_LIBRARIES}
 		${BZIP2_LIBRARIES}
 		${OPENGL_LIBRARIES}
-		${ENET_LIBRARIES}
+		${ENET_LIBRARIES} winmm.lib
 		ws2_32.lib version.lib shlwapi.lib dbghelp.lib
 	)
 	if(USE_CURL)
@@ -299,7 +299,7 @@ if(BUILD_SERVER)
 		${JSON_LIBRARY}
 		${ZLIB_LIBRARIES}
 		${SQLITE3_LIBRARY}
-		${ENET_LIBRARIES}
+		${ENET_LIBRARIES} winmm.lib
 		ws2_32.lib version.lib shlwapi.lib dbghelp.lib
 	)
 	if(USE_CURL)

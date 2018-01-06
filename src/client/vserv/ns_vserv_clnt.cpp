@@ -308,12 +308,12 @@ void GsPlayBack::dequeue()
 {
 	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
 		ALint num_processed = 0;
-		ALuint bufferDummy = -1;
 		do {
 			alGetSourcei(*itFlow->second.m_source, AL_BUFFERS_PROCESSED, &num_processed);
 			warn_if_error(alGetError(), "PlayBack get buffers processed");
 			if (num_processed > 0) {
-				alSourceUnqueueBuffers(*itFlow->second.m_source, num_processed, &bufferDummy);
+				ALuint bufferDummy[16];
+				alSourceUnqueueBuffers(*itFlow->second.m_source, MYMIN(num_processed, 16), bufferDummy);
 				warn_if_error(alGetError(), "PlayBack get buffers processed");
 			}
 		} while (num_processed);
@@ -325,15 +325,16 @@ void GsPlayBack::ensurePlaying()
 	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
 		ALint state = 0;
 		alGetSourcei(*itFlow->second.m_source, AL_SOURCE_STATE, &state);
+		warn_if_error(alGetError(), "PlayBack get source state");
 		if (state != AL_PLAYING)
 			alSourcePlay(*itFlow->second.m_source);
-		warn_if_error(alGetError(), "PlayBack get source state");
+		warn_if_error(alGetError(), "PlayBack source play");
 	}
 }
 
 void GsPlayBack::expireFlows(long long timestamp)
 {
-	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); /*dummy*/) {
 		if (isLiveFlow(itFlow->first, timestamp)) {
 			/*keep*/
 			++itFlow;
@@ -494,7 +495,9 @@ void VServClnt::updateOther(long long timestamp, uint32_t keys)
 		//   use IPv6 minimum allowed MTU as receive buffer size as this is
 		//   theoretical reliable upper boundary of a udp packet for all IPv6 enabled
 		//   infrastructure
-		const size_t packet_maxsize = 1500;
+		//const size_t packet_maxsize = 1500;
+		// FIXME: actually nothing wrong with big _incoming_ packet size limits
+		const size_t packet_maxsize = 8192;
 		uint8_t packetdata[packet_maxsize];
 		size_t packetsize = 0;
 		if (-1 == (packetsize = m_socket->Receive(addr_from, packetdata, packet_maxsize)))

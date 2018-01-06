@@ -57,13 +57,15 @@ void GsIdenter::update(long long timestamp, GsMgmtSend *send)
 	if (timestamp < m_timestamp_last_requested + GS_IDENTER_REQUEST_INTERVAL_MS)
 		return;
 
-	/* update work - send / resent the ident message */
+	/* update work - send / resend the ident message */
 
 	NetworkPacket packet;
 
 	packet << (uint8_t) GS_VSERV_CMD_IDGET << (uint32_t) m_generation_have;
 
 	send->send(&packet);
+
+	m_timestamp_last_requested = timestamp;
 }
 
 void GsIdenter::mergeIdVec(const std::vector<uint16_t> &id_vec, uint32_t generation)
@@ -80,6 +82,7 @@ void GsIdenter::mergeIdVec(const std::vector<uint16_t> &id_vec, uint32_t generat
 		tmp.m_name; /*dummy*/
 		tmp.m_serv; /*dummy*/
 		tmp.m_id = id_vec[i];
+		id_name_map[id_vec[i]] = tmp;
 	}
 
 	if (id_name_map.size() != id_vec.size())
@@ -200,8 +203,9 @@ void VServMgmt::threadFunc()
 			while (true) {
 				if (0 > (r = enet_host_check_events(m_host.get(), &evt)))
 					throw std::runtime_error("VServ mgmt host check_events");
-				if (0 < r)
-					evt_vec.push_back(evt);
+				if (r == 0)
+					break;
+				evt_vec.push_back(evt);
 			}
 		}
 		timestamp_last_run = porting::getTimeMs();
@@ -275,7 +279,7 @@ void VServMgmt::processPacket(long long timestamp, uint8_t *packetdata, size_t p
 
 		const std::map<uint16_t, GsName> &id_name_map = m_identer->getIdNameMap();
 
-		outPacket << (uint8_t) GS_VSERV_M_CMD_GROUPSET << (uint32_t) id_name_map.size();
+		outPacket << (uint8_t) GS_VSERV_M_CMD_GROUPSET << (uint32_t) id_name_map.size() << (uint32_t ) 1;
 
 		for (auto it = id_name_map.begin(); it != id_name_map.end(); ++it)
 			outPacket << it->first;

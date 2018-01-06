@@ -11,6 +11,7 @@
 #include <threading/mutex_auto_lock.h>
 
 #include <client/vserv/ns_vserv_clnt.h>
+#include <client/vserv/ns_vserv_mgmt.h>
 
 class VServClntCtl;
 /* global variable */
@@ -81,11 +82,6 @@ public:
 		m_mutex()
 	{}
 
-	void clntSet(VServClnt *clnt)
-	{
-		m_clnt = clnt;
-	}
-
 	void msgPush(const VServClntMsg &msg)
 	{
 		MutexAutoLock lock(m_mutex);
@@ -116,15 +112,20 @@ public:
 		return ! m_queue.empty();
 	}
 
-	static void s_init(uint32_t vserv_port, const char *vserv_hostname)
+	static void s_init(uint32_t vserv_port, uint32_t vserv_mgmt_port, const char *vserv_hostname)
 	{
 		if (g_vserv_clnt_ctl != NULL)
 			throw std::logic_error("vserv global already inited");
 
-		g_vserv_clnt_ctl = new VServClntCtl();
+		VServClntCtl *ctl = new VServClntCtl();
 		// FIXME: ipv6 false
-		VServClnt *clnt = new VServClnt(g_vserv_clnt_ctl, false, vserv_port, vserv_hostname);
-		g_vserv_clnt_ctl->clntSet(clnt);
+		VServClnt *clnt = new VServClnt(ctl, false, vserv_port     , vserv_hostname);
+		VServMgmt *mgmt = new VServMgmt(ctl, false, vserv_mgmt_port, vserv_hostname);
+
+		ctl->m_clnt = clnt;
+		ctl->m_mgmt = mgmt;
+
+		g_vserv_clnt_ctl = ctl;
 	}
 
 	static void s_connect_ident(VServClntCtl *ctl, const char *player_name, const char *serv_name)
@@ -136,6 +137,7 @@ public:
 
 private:
 	VServClnt *m_clnt;
+	VServMgmt *m_mgmt;
 	std::deque<VServClntMsg> m_queue;
 	std::mutex m_mutex;
 

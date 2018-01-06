@@ -38,6 +38,7 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("enable_sound", "true");
 	settings->setDefault("enable_vserv", "true");
 	settings->setDefault("vserv_port", "3757");
+	settings->setDefault("vserv_mgmt_port", "3758");
 	settings->setDefault("vserv_hostname", "10.55.1.6");
 	settings->setDefault("sound_volume", "0.8");
 	settings->setDefault("mute_sound", "false");
