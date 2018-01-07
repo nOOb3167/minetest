@@ -156,7 +156,9 @@ public:
 	void harvest(long long timestamp, std::vector<std::pair<ALuint, unique_ptr_aluint> > *out_buffer_vec);
 	void harvestAndEnqueue(long long timestamp);
 	void dequeue();
+	static void dequeueOne(ALuint source);
 	void ensurePlaying();
+	static void ensureStoppedOne(ALuint source);
 	void expireFlows(long long timestamp);
 	bool isLiveFlow(const PBFlowKey &key, long long timestamp);
 

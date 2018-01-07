@@ -247,6 +247,8 @@ void GsPlayBack::packetInsert(long long timestamp, uint16_t id, uint16_t blk, ui
 			else {
 				unique_ptr_aluint source(new ALuint(-1), deleteSource);
 				alGenSources(1, source.get());
+				alSourcef(*source, AL_MIN_GAIN, 1.0f);
+				alSourcef(*source, AL_MAX_GAIN, 1.0f);
 				warn_if_error(alGetError(), "PlayBack source creation");
 				it1 = (m_map_flow.insert(std::make_pair(key, PBFlow(std::move(source), timestamp)))).first;
 			}
@@ -300,24 +302,36 @@ void GsPlayBack::harvestAndEnqueue(long long timestamp)
 
 	for (size_t i = 0; i < buffer_vec.size(); i++) {
 		alSourceQueueBuffers(buffer_vec[i].first, 1, buffer_vec[i].second.get());
+		/* if the buffer was queued successfully we will take care of its deletion
+		   (via alDeleteBuffers) after unqueuing - here just delete memory for the ALuint. */
+		if (alGetError() == AL_NO_ERROR)
+			delete buffer_vec[i].second.release();
 		warn_if_error(alGetError(), "PlayBack source buffer queue");
 	}
 }
 
 void GsPlayBack::dequeue()
 {
-	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow) {
-		ALint num_processed = 0;
-		do {
-			alGetSourcei(*itFlow->second.m_source, AL_BUFFERS_PROCESSED, &num_processed);
+	for (auto itFlow = m_map_flow.begin(); itFlow != m_map_flow.end(); ++itFlow)
+		dequeueOne(*itFlow->second.m_source);
+}
+
+void GsPlayBack::dequeueOne(ALuint source)
+{
+	ALint num_processed = 0;
+	do {
+		alGetSourcei(source, AL_BUFFERS_PROCESSED, &num_processed);
+		warn_if_error(alGetError(), "PlayBack get buffers processed");
+		if (num_processed > 0) {
+			ALuint bufferDummy[16];
+			alSourceUnqueueBuffers(source, MYMIN(num_processed, 16), bufferDummy);
 			warn_if_error(alGetError(), "PlayBack get buffers processed");
-			if (num_processed > 0) {
-				ALuint bufferDummy[16];
-				alSourceUnqueueBuffers(*itFlow->second.m_source, MYMIN(num_processed, 16), bufferDummy);
-				warn_if_error(alGetError(), "PlayBack get buffers processed");
-			}
-		} while (num_processed);
-	}
+			/* OpenAL allows queuing an ALbuffer to multiple sources.
+			   this is not used therefore having a buffer unqueued is enough confirmation
+			   to perform a delete safely. */
+			alDeleteBuffers(MYMIN(num_processed, 16), bufferDummy);
+		}
+	} while (num_processed);
 }
 
 void GsPlayBack::ensurePlaying()
@@ -330,6 +344,12 @@ void GsPlayBack::ensurePlaying()
 			alSourcePlay(*itFlow->second.m_source);
 		warn_if_error(alGetError(), "PlayBack source play");
 	}
+}
+
+void GsPlayBack::ensureStoppedOne(ALuint source)
+{
+	alSourceStop(source);
+	warn_if_error(alGetError(), "PlayBack source stop");
 }
 
 void GsPlayBack::expireFlows(long long timestamp)
@@ -389,12 +409,21 @@ void GsPlayBack::deleteBuffer(ALuint *buffer)
 {
 	if (*buffer != -1)
 		alDeleteBuffers(1, buffer);
+	delete buffer;
 }
 
 void GsPlayBack::deleteSource(ALuint *source)
 {
-	if (*source != -1)
+	/* the source deleter needs to take care of having it:
+	     stop, dequeue and delete buffers, delete itself. */
+	if (*source != -1) {
+		ensureStoppedOne(*source);
+		dequeueOne(*source);
+
 		alDeleteSources(1, source);
+		warn_if_error(alGetError(), "PlayBack source delete");
+	}
+	delete source;
 }
 
 VServClnt::VServClnt(VServClntCtl *ctl, bool ipv6, uint32_t port, const char *hostname):
