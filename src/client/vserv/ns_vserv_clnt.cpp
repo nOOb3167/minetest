@@ -556,7 +556,7 @@ void VServClnt::updateRecord(long long timestamp, uint8_t mode, uint16_t blk, co
 
 	NetworkPacket packet;
 
-	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq << (uint32_t) fra_buf.size();
+	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq;
 	packet.putRawString(fra_buf);
 
 	/* commit mSeq */
