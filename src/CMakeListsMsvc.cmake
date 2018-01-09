@@ -45,7 +45,10 @@ set(ENET_INCLUDE_DIR "-NOTFOUND"
 		CACHE PATH "ENet include directory")
 set(ENET_LIBRARIES "-NOTFOUND"
 		CACHE FILEPATH "Path to ENet library")
-
+set(OPUS_INCLUDE_DIR "-NOTFOUND"
+		CACHE PATH "Opus include directory")
+set(OPUS_LIBRARIES "-NOTFOUND"
+		CACHE FILEPATH "Path to Opus library")
 
 option(APPLY_LOCALE_BLACKLIST "Use a blacklist to avoid broken locales" TRUE)
 set(GETTEXT_BLACKLISTED_LOCALES be he ko ky zh_CN zh_TW CACHE STRING "Blacklisted locales that don't work. see issue #4638")
@@ -209,6 +212,7 @@ FIXME_FILTER_NOTFOUND(
 	REDIS_INCLUDE_DIR
 	SPATIAL_INCLUDE_DIR
 	ENET_INCLUDE_DIR
+    OPUS_INCLUDE_DIR
 )
 
 set(INCLUDE_DIRECTORIES_EVERYTHING
@@ -228,6 +232,7 @@ set(INCLUDE_DIRECTORIES_EVERYTHING
 	${REDIS_INCLUDE_DIR}
 	${SPATIAL_INCLUDE_DIR}
 	${ENET_INCLUDE_DIR}
+    ${OPUS_INCLUDE_DIR}
 	${LUA_INCLUDE_DIR}
 	${GMP_INCLUDE_DIR}
 	${JSON_INCLUDE_DIR}
@@ -255,6 +260,7 @@ if(BUILD_CLIENT)
 		${BZIP2_LIBRARIES}
 		${OPENGL_LIBRARIES}
 		${ENET_LIBRARIES} winmm.lib
+        ${OPUS_LIBRARIES}
 		ws2_32.lib version.lib shlwapi.lib dbghelp.lib
 	)
 	if(USE_CURL)
@@ -300,6 +306,7 @@ if(BUILD_SERVER)
 		${ZLIB_LIBRARIES}
 		${SQLITE3_LIBRARY}
 		${ENET_LIBRARIES} winmm.lib
+        ${OPUS_LIBRARIES}
 		ws2_32.lib version.lib shlwapi.lib dbghelp.lib
 	)
 	if(USE_CURL)

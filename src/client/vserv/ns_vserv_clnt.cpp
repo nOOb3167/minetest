@@ -130,10 +130,15 @@ void GsPinger::update(GsSend *send, long long timestamp)
 
 GsRecord::GsRecord():
 	// FIXME: configurable device selection wanted
-	m_cap_device(alcCaptureOpenDevice(NULL, GS_48KHZ, AL_FORMAT_MONO16, GS_RECORD_ARBITRARY_BUFFER_SAMPLES_NUM), deleteDevice)
+	m_cap_device(alcCaptureOpenDevice(NULL, GS_48KHZ, AL_FORMAT_MONO16, GS_RECORD_ARBITRARY_BUFFER_SAMPLES_NUM), deleteDevice),
+	m_opusenc(opus_encoder_create(GS_48KHZ, 1, OPUS_APPLICATION_VOIP, NULL), deleteOpusEnc),
+	m_blk(0),
+	m_seq(0)
 {
 	if (! m_cap_device)
 		throw std::runtime_error("OpenAL capture open");
+	if (! m_opusenc)
+		throw std::runtime_error("Opus encoder create");
 }
 
 void GsRecord::start()
@@ -199,11 +204,52 @@ void GsRecord::captureDrain(size_t SampSize, size_t FraNumSamp, std::string *Fra
 	warn_if_error(alGetError(), "OpenAL capture samples");
 }
 
+void GsRecord::resetForBlockConditionally(uint16_t blk)
+{
+	if (m_blk != blk) {
+		if (! (m_opusenc = std::move(unique_ptr_opusenc(opus_encoder_create(GS_48KHZ, 1, OPUS_APPLICATION_VOIP, NULL), deleteOpusEnc))))
+			throw std::runtime_error("Opus encoder create");
+		m_blk = blk;
+		m_seq = 0;
+	}
+}
+
+std::string GsRecord::encodeFrame(const std::string &fra_buf)
+{
+	std::string opusfra_buf;
+
+	assert(fra_buf.size() == GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM * 1 * sizeof(opus_int16));
+
+	opusfra_buf.resize(GS_OPUS_FRAME_ENCODED_MAX_DATA_BYTES);
+
+	int len = opus_encode(m_opusenc.get(),
+			(opus_int16    *) fra_buf.data()    , GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM,
+			(unsigned char *) opusfra_buf.data(), opusfra_buf.size());
+	if (len < 0)
+		throw std::runtime_error("Opus encoder encode");
+
+	opusfra_buf.resize(len);
+
+	return opusfra_buf;
+}
+
+void GsRecord::advanceSeq()
+{
+	// FIXME: overflow handling (maybe resetForBlockConditionally(m_blk+1))
+	m_seq += 1;
+}
+
 void GsRecord::deleteDevice(ALCdevice *device)
 {
 	if (device)
 		if (!alcCaptureCloseDevice(device))
 			assert(0);
+}
+
+void GsRecord::deleteOpusEnc(OpusEncoder *enc)
+{
+	if (enc)
+		opus_encoder_destroy(enc);
 }
 
 GsPlayBack::GsPlayBack() = default;
@@ -280,14 +326,14 @@ void GsPlayBack::harvest(long long timestamp, std::vector<std::pair<ALuint, uniq
 			warn_if_error(alGetError(), "PlayBack buffer creation");
 			/* buffer contents depending on whether we received the data - or are compensating packet loss etc */
 			auto itBuf = itFlow->second.m_map_buf.find(itFlow->second.m_next_seq + j);
-			if (itBuf != itFlow->second.m_map_buf.end()) {
-				alBufferData(*buffer, AL_FORMAT_MONO16, itBuf->second.data(), itBuf->second.size(), GS_48KHZ);
-				warn_if_error(alGetError(), "PlayBack buffer data");
-			}
-			else {
-				alBufferData(*buffer, AL_FORMAT_MONO16, g_buf_silence_dummy, sizeof g_buf_silence_dummy, GS_48KHZ);
-				warn_if_error(alGetError(), "PlayBack buffer data");
-			}
+			std::string opusfra_buf;
+			if (itBuf != itFlow->second.m_map_buf.end())
+				opusfra_buf = itFlow->second.decodeFrame(itBuf->second);
+			else
+				opusfra_buf = itFlow->second.decodeFrameMissing();
+			alBufferData(*buffer, AL_FORMAT_MONO16, opusfra_buf.data(), opusfra_buf.size(), GS_48KHZ);
+			warn_if_error(alGetError(), "PlayBack buffer data");
+			/* emit */
 			out_buffer_vec->push_back(std::make_pair(*itFlow->second.m_source, std::move(buffer)));
 		}
 		itFlow->second.m_next_seq += count;
@@ -426,10 +472,14 @@ void GsPlayBack::deleteSource(ALuint *source)
 	delete source;
 }
 
+void GsPlayBack::deleteOpusDec(OpusDecoder *dec)
+{
+	if (dec)
+		opus_decoder_destroy(dec);
+}
+
 VServClnt::VServClnt(VServClntCtl *ctl, bool ipv6, uint32_t port, const char *hostname):
 	m_ctl(ctl),
-	m_blk(0),
-	m_seq(0),
 	m_name(),
 	m_renamer(new GsRenamer()),
 	m_pinger(new GsPinger()),
@@ -493,7 +543,7 @@ void VServClnt::ident(GsSend *send, const std::string &name_want, const std::str
 	m_renamer = std::move(renamer);
 }
 
-void VServClnt::updateOther(long long timestamp, uint32_t keys)
+; void VServClnt::updateOther(long long timestamp, uint32_t keys)
 {
 	Address addr;
 
@@ -548,20 +598,18 @@ void VServClnt::updateRecord(long long timestamp, uint8_t mode, uint16_t blk, co
 	if (mode == GS_VSERV_GROUP_MODE_NONE)
 		return;
 
-	/* fresh blk? use it (also resetting seq) */
-	if (m_blk != blk) {
-		m_blk = blk;
-		m_seq = 0;
-	}
+	/* fresh blk? */
+	m_record->resetForBlockConditionally(blk);
+
+	std::string opusfra_buf = m_record->encodeFrame(fra_buf);
+
+	/* commit mSeq */
+	m_record->advanceSeq();
 
 	NetworkPacket packet;
 
-	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_blk << m_seq;
-	packet.putRawString(fra_buf);
-
-	/* commit mSeq */
-	// FIXME: overflow handling (maybe advance blk)
-	m_seq += 1;
+	packet << (uint8_t) GS_VSERV_CMD_GROUP_MODE_MSG << mode << m_name.m_id << m_record->getBlk() << m_record->getSeq();
+	packet.putRawString(opusfra_buf);
 
 	m_send->send(&packet);
 }
