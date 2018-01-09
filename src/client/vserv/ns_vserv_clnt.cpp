@@ -252,6 +252,64 @@ void GsRecord::deleteOpusEnc(OpusEncoder *enc)
 		opus_encoder_destroy(enc);
 }
 
+GsPlayBack::PBFlow::PBFlow(GsPlayBack::unique_ptr_aluint source, long long timestamp_first_receipt):
+		m_source(std::move(source)),
+		m_opusdec(opus_decoder_create(GS_48KHZ, 1, NULL), deleteOpusDec),
+		m_timestamp_first_receipt(timestamp_first_receipt),
+		m_next_seq(0)
+{
+	if (!m_opusdec)
+		throw std::runtime_error("Opus decoder create");
+}
+
+std::string GsPlayBack::PBFlow::decodeFrame(const std::string &fra_buf)
+{
+	std::string opusfra_buf;
+
+	/* see doc of opus_decode about the function being unable to decode some packets
+	   unless its 'pcm' and 'frame_size' parameters are big enough */
+
+	opusfra_buf.resize(GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM * 1 * sizeof(opus_int16));
+
+	int num_samp = opus_decode(m_opusdec.get(),
+			(const unsigned char *) fra_buf.data(), fra_buf.size(),
+			(opus_int16 *) opusfra_buf.data(), GS_OPUS_FRAME_48KHZ_120MS_SAMP_NUM,
+			0);
+	if (num_samp < 0)
+		throw std::runtime_error("Opus decoder decode");
+
+	/* https://wiki.xiph.org/OpusFAQ#What_frame_size_should_I_use.3F
+	   even though we decode with capacity to receive up to 120ms packets,
+	   the code works with 20ms packets */
+	assert(num_samp == GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM);
+
+	opusfra_buf.resize(num_samp * 1 * sizeof(opus_int16));
+
+	return opusfra_buf;
+}
+
+std::string GsPlayBack::PBFlow::decodeFrameMissing()
+{
+	std::string opusfra_buf;
+
+	/* see doc of opus_decode about how frame_size is constrained for PLC (data=NULL).
+	   frame_size must reflect duration of missing audio.
+	   as the code works with 20ms packets, there is 20ms of missing audio. */
+
+	opusfra_buf.resize(GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM * 1 * sizeof(opus_int16));
+
+	int num_samp = opus_decode(m_opusdec.get(),
+			NULL, 0,
+			(opus_int16 *) opusfra_buf.data(), GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM,
+			0);
+	if (num_samp < 0)
+		throw std::runtime_error("Opus decoder decode");
+
+	assert(num_samp == GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM);
+
+	return opusfra_buf;
+}
+
 GsPlayBack::GsPlayBack() = default;
 
 void GsPlayBack::packetInsert(long long timestamp, uint16_t id, uint16_t blk, uint16_t seq,
