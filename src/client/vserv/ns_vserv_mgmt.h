@@ -9,12 +9,13 @@
 
 #include <enet/enet.h>
 
-#include <client/vserv/ns_vserv_clnt_iface.h>
 #include <network/address.h>
 #include <network/networkpacket.h>
 #include <threading/thread.h>
 
 #define GS_IDENTER_REQUEST_INTERVAL_MS 500
+
+class VServClntCtl;
 
 class GsMgmtSend
 {
