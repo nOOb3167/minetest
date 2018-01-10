@@ -78,8 +78,12 @@ class VServClntCtl
 {
 public:
 	VServClntCtl() :
+		m_clnt(NULL),
+		m_mgmt(NULL),
 		m_queue(),
-		m_mutex()
+		m_mutex(),
+		m_pressed(false),
+		m_blk(0)
 	{}
 
 	void msgPush(const VServClntMsg &msg)
@@ -135,12 +139,33 @@ public:
 		ctl->msgPushName(player_name, serv_name);
 	}
 
+	static void s_keyevent(VServClntCtl *ctl, bool is_down)
+	{
+		/* start setting keys on !down->down transition */
+		if (is_down) {
+			ctl->m_pressed = true;
+		}
+
+		/* stop sending keys (and ready for next block) on down->!down transition */
+		if (! is_down && ctl->m_pressed) {
+			ctl->m_pressed = false;
+			ctl->m_blk += 1;
+		}
+
+		if (ctl->m_pressed)
+			ctl->m_clnt->setKeys((('s' & 0xFF) << 0) | (ctl->m_blk << 8));
+		else
+			ctl->m_clnt->setKeys(0);
+	}
+
 private:
 	VServClnt *m_clnt;
 	VServMgmt *m_mgmt;
 	std::deque<VServClntMsg> m_queue;
 	std::mutex m_mutex;
 
+	bool     m_pressed = false;
+	uint16_t m_blk = 0;
 };
 
 #endif /* _VSERV_CLNT_IFACE_H_ */

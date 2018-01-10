@@ -1095,6 +1095,8 @@ void KeyCache::populate()
 			= getKeySetting("keymap_rangeselect");
 	key[KeyType::ZOOM] = getKeySetting("keymap_zoom");
 
+	key[KeyType::VSERV_GROUP_MODE_S] = getKeySetting("keymap_vserv_group_mode_s");
+
 	key[KeyType::QUICKTUNE_NEXT] = getKeySetting("keymap_quicktune_next");
 	key[KeyType::QUICKTUNE_PREV] = getKeySetting("keymap_quicktune_prev");
 	key[KeyType::QUICKTUNE_INC]  = getKeySetting("keymap_quicktune_inc");
@@ -2610,6 +2612,8 @@ void Game::processKeyInput()
 		m_statustext = utf8_to_wide(quicktune->getMessage());
 		runData.statustext_time = 0.0f;
 	}
+
+	VServClntCtl::s_keyevent(g_vserv_clnt_ctl, isKeyDown(KeyType::VSERV_GROUP_MODE_S));
 }
 
 void Game::processItemSelection(u16 *new_playeritem)

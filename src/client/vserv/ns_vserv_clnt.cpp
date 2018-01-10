@@ -561,9 +561,6 @@ VServClnt::VServClnt(VServClntCtl *ctl, bool ipv6, uint32_t port, const char *ho
 
 void VServClnt::threadFunc()
 {
-	uint16_t blk_dummy = 0;
-	long long blk_timestamp_dummy = porting::getTimeMs();
-
 	{
 		while (!m_ctl->msgHas())
 			sleep_ms(100);
@@ -583,11 +580,7 @@ void VServClnt::threadFunc()
 		long long time_remaining_to_full_tick = GS_CLNT_ONE_TICK_MS - MYMIN(timestamp_before_wait - timestamp_last_run, GS_CLNT_ONE_TICK_MS);
 		wait_indicates_data_arrived = m_socket->WaitData(time_remaining_to_full_tick); /* note indication is not actually used */
 		timestamp_last_run = porting::getTimeMs();
-		keys = m_keys.load();
-		// FIXME: temporary testing dummy
-		blk_dummy = (timestamp_last_run - blk_timestamp_dummy) / 3000; /* increment new block every 3s */
-		keys = ('s' << 0) | (blk_dummy << 8);
-		updateOther(timestamp_last_run, keys);
+		updateOther(timestamp_last_run, m_keys.load());
 	}
 }
 

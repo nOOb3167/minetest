@@ -226,6 +226,8 @@ public:
 	void packetFill(uint8_t *packetdata, size_t packetsize, NetworkPacket *io_packet);
 	void processPacket(long long timestamp, uint8_t *packetdata, size_t packetsize, const Address &addr_from);
 
+	void setKeys(uint32_t val) { m_keys.store(val); };
+
 private:
 	VServClntCtl * m_ctl = NULL;
 

@@ -129,6 +129,8 @@ void set_default_settings(Settings *settings)
 	settings->setDefault("keymap_slot22", "");
 	settings->setDefault("keymap_slot23", "");
 
+	settings->setDefault("keymap_vserv_group_mode_s", "KEY_KEY_V");
+
 	// Some (temporary) keys for debugging
 	settings->setDefault("keymap_quicktune_prev", "KEY_HOME");
 	settings->setDefault("keymap_quicktune_next", "KEY_END");
