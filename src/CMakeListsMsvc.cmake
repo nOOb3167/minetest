@@ -342,7 +342,7 @@ set(TMP_COMPILE_DEFINITIONS
 	WIN32_LEAN_AND_MEAN
 	USE_CMAKE_CONFIG_H
 	# Surpress some useless warnings
-	_CRT_SECURE_NO_DEPRECATE /W1
+	_CRT_SECURE_NO_DEPRECATE
 	# Get M_PI to work
 	_USE_MATH_DEFINES
 	# Dont define min/max macros in minwindef.h
@@ -354,6 +354,7 @@ target_compile_definitions(${PROJECT_NAME}       PUBLIC ${TMP_COMPILE_DEFINITION
 target_compile_definitions(${PROJECT_NAME}server PUBLIC ${TMP_COMPILE_DEFINITIONS})
 
 set(TMP_COMPILE_OPTIONS
+	/W1
 	/MP
 	$<$<CONFIG:Release>:  /EHa /Ox /GL /FD /MT /GS- /Zi /fp:fast /TP>
 	$<$<CONFIG:SemiDebug>: /MDd /Zi /Ob0 /O1 /RTC1>
