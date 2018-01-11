@@ -11,6 +11,7 @@
 #include <threading/mutex_auto_lock.h>
 
 #include <client/vserv/ns_vserv_clnt.h>
+#include <client/vserv/ns_vserv_hud.h>
 #include <client/vserv/ns_vserv_mgmt.h>
 
 class VServClntCtl;
@@ -78,6 +79,7 @@ class VServClntCtl
 {
 public:
 	VServClntCtl() :
+		m_hud(NULL),
 		m_clnt(NULL),
 		m_mgmt(NULL),
 		m_queue(),
@@ -122,10 +124,12 @@ public:
 			throw std::logic_error("vserv global already inited");
 
 		VServClntCtl *ctl = new VServClntCtl();
+		VServHud  *hud  = new VServHud();
 		// FIXME: ipv6 false
 		VServClnt *clnt = new VServClnt(ctl, false, vserv_port     , vserv_hostname);
 		VServMgmt *mgmt = new VServMgmt(ctl, false, vserv_mgmt_port, vserv_hostname);
 
+		ctl->m_hud  = hud;
 		ctl->m_clnt = clnt;
 		ctl->m_mgmt = mgmt;
 
@@ -158,9 +162,15 @@ public:
 			ctl->m_clnt->setKeys(0);
 	}
 
+	static void s_drawhud(VServClntCtl *ctl)
+	{
+		ctl->m_hud->drawSpectr();
+	}
+
 private:
-	VServClnt *m_clnt;
-	VServMgmt *m_mgmt;
+	VServHud * m_hud  = NULL;
+	VServClnt *m_clnt = NULL;
+	VServMgmt *m_mgmt = NULL;
 	std::deque<VServClntMsg> m_queue;
 	std::mutex m_mutex;
 

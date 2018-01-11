@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "core.h"
 #include "camera.h"
+#include "client/vserv/ns_vserv_clnt_iface.h"
 #include "client.h"
 #include "clientmap.h"
 #include "hud.h"
@@ -91,6 +92,7 @@ void RenderingCore::drawHUD()
 		camera->drawNametags();
 		if (mapper && show_minimap)
 			mapper->drawMinimap();
+		g_vserv_clnt_ctl->s_drawhud(g_vserv_clnt_ctl);
 	}
 	guienv->drawAll();
 }

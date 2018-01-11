@@ -77,6 +77,11 @@ bool ClientLauncher::run(GameParams &game_params, const Settings &cmd_args)
 	if (list_video_modes)
 		return RenderingEngine::print_video_modes();
 
+	if (!init_engine()) {
+		errorstream << "Could not initialize game engine." << std::endl;
+		return false;
+	}
+
 #if USE_SOUND
 	if (g_settings->getBool("enable_sound"))
 		g_sound_manager_global = createOpenALSoundManagerGlobal();
@@ -84,11 +89,6 @@ bool ClientLauncher::run(GameParams &game_params, const Settings &cmd_args)
 		return false;
 	VServClntCtl::s_init(g_settings->getU32("vserv_port"), g_settings->getU32("vserv_mgmt_port"), g_settings->get("vserv_hostname").c_str());
 #endif
-
-	if (!init_engine()) {
-		errorstream << "Could not initialize game engine." << std::endl;
-		return false;
-	}
 
 	// Speed tests (done after irrlicht is loaded to get timer)
 	if (cmd_args.getFlag("speedtests")) {
