@@ -594,7 +594,7 @@ void VServClnt::ident(GsSend *send, const std::string &name_want, const std::str
 	m_renamer = std::move(renamer);
 }
 
-; void VServClnt::updateOther(long long timestamp, uint32_t keys)
+void VServClnt::updateOther(long long timestamp, uint32_t keys)
 {
 	Address addr;
 
