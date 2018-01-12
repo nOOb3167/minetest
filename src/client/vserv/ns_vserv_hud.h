@@ -38,6 +38,12 @@ public:
 		if (! m_image[0] || ! m_image[1])
 			throw std::runtime_error("VServ hud");
 
+		for (u16 y = 0; y < m_dim.Height; y++)
+		for (u16 x = 0; x < m_dim.Width; x++) {
+			m_image[0]->setPixel(x, y, video::SColor(255, 255, 0, 0));
+			m_image[1]->setPixel(x, y, video::SColor(255, 0, 0, 255));
+		}
+
 		for (size_t i = 0; i < 2; i++)
 			m_texture[i] = m_driver->addTexture(m_name[i], m_image[i]);
 
@@ -64,18 +70,24 @@ public:
 		video::ITexture *& tex_l = m_texture[(m_imgidx + 1) % 2];
 		const char *tex_r_name = m_name[m_imgidx];
 
-		m_imgpos = MYMAX(0, m_imgpos - scrollby);
+		scrollby = MYMIN(scrollby, m_imgpos);
 
 		for (u16 y = 0; y < m_dim.Height; y++)
 		for (u16 x = 0; x < scrollby ; x++) {
-			img_r->setPixel(m_imgpos + x, y, video::SColor(255, (m_imgpos + x)/3, (m_imgpos + x)/3, 0));
+			size_t drawbase = m_dim.Width - m_imgpos;
+			img_r->setPixel(drawbase + x, y, video::SColor(255, MYMIN(64 + (drawbase + x) / 3, 255), MYMIN(64 + (drawbase + x) / 3, 255), 0));
 		}
+
+		m_imgpos -= scrollby;
 
 		m_driver->removeTexture(tex_r);
 		tex_r = m_driver->addTexture(tex_r_name, img_r);
 		if (! tex_r)
 			throw std::runtime_error("VServ hud tex");
+	}
 
+	void scrollPostAdjust()
+	{
 		if (m_imgpos == 0) {
 			m_imgpos = m_dim.Width;
 			m_imgidx = (m_imgidx + 1) % 2;
@@ -91,6 +103,8 @@ public:
 
 		m_driver->draw2DImage(tex_r, core::vector2di(m_imgpos, 0), core::recti(0, 0, m_dim.Width - m_imgpos, m_dim.Height));
 		m_driver->draw2DImage(tex_l, core::vector2di(0, 0), core::recti(m_dim.Width - m_imgpos, 0, m_dim.Width, m_dim.Height));
+
+		scrollPostAdjust();
 	}
 
 private:
