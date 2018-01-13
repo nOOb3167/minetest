@@ -1,6 +1,8 @@
 #ifndef _VSERV_HUD_H_
 #define _VSERV_HUD_H_
 
+#include <climits>
+#include <cstdint>
 #include <deque>
 #include <mutex>
 #include <stdexcept>
@@ -115,25 +117,11 @@ public:
 			scrollPostAdjust();
 		}
 
-		//for (u16 y = 0; y < m_dim.Height; y++)
-		//	for (u16 x = 0; x < scrollby; x++) {
-		//		size_t drawbase = m_dim.Width - m_imgpos;
-		//		img_r->setPixel(drawbase + x, y, video::SColor(255, MYMIN(64 + (drawbase + x) / 3, 255), MYMIN(64 + (drawbase + x) / 3, 255), 0));
-		//}
-		virtual void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r)
-		{
-			for (u16 y = 0; y < m_dim.Height; y++)
-			for (u16 x = 0; x < scrollby; x++) {
-				img_r->setPixel(drawbase + x, y, video::SColor(255, MYMIN(64 + (drawbase + x) / 3, 255), MYMIN(64 + (drawbase + x) / 3, 255), 0));
-			}
-		}
+		virtual void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r) = 0;
 
-		virtual size_t virtualScrollByHelper()
-		{
-			return 16;
-		}
+		virtual size_t virtualScrollByHelper() = 0;
 
-	private:
+	protected:
 		video::IVideoDriver * m_driver;
 
 		core::dimension2d<u32> m_dim;
@@ -144,10 +132,117 @@ public:
 		size_t m_imgpos;
 	};
 
+	class HudScrollYellow : public HudScroll
+	{
+	public:
+		HudScrollYellow(size_t width, size_t height, size_t uniq_texname_id) :
+			HudScroll(width, height, uniq_texname_id)
+		{}
+
+		void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r) override
+		{
+			for (u16 y = 0; y < m_dim.Height; y++)
+				for (u16 x = 0; x < scrollby; x++) {
+					size_t drawbase = m_dim.Width - m_imgpos;
+					img_r->setPixel(drawbase + x, y, video::SColor(255, MYMIN(64 + (drawbase + x) / 3, 255), MYMIN(64 + (drawbase + x) / 3, 255), 0));
+			}
+		}
+
+		virtual size_t virtualScrollByHelper() override
+		{
+			return 16;
+		}
+	};
+
+	class HudScrollFrame : public HudScroll
+	{
+	public:
+		HudScrollFrame(size_t width, size_t height, size_t uniq_texname_id, size_t scrollby) :
+			HudScroll(width, height, uniq_texname_id),
+			m_scrollby(scrollby),
+			m_framedummy(GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM * sizeof(int16_t), '\0'),
+			m_frames()
+		{}
+
+		inline long squeeze16(long val, long vertical_positive, long vertical_negative)
+		{
+			if (val > 0)
+				return (float)(val * vertical_positive) / INT16_MAX;
+			else
+				return -((float)(val * vertical_negative) / INT16_MIN);
+		}
+
+		void drawFrame(size_t scrollby, size_t drawbase, video::IImage *img_r, const std::string &frame)
+		{
+			const size_t samples_num = GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM;
+			assert(frame.size() == samples_num * sizeof(int16_t));
+
+			const size_t samples_per_px = samples_num / scrollby;  // truncating division - ignore last samples_num % scrollby
+
+			const int16_t *samples = (const int16_t *) frame.data();
+			const int16_t *cursamp = samples;
+
+			for (size_t x = 0; x < scrollby; x++) {
+				long max = INT16_MIN;
+				long min = INT16_MAX;
+				size_t num_positive = 0;
+				size_t num_negative = 0;
+				float avg_positive = 0.0f;
+				float avg_negative = 0.0f;
+				for (size_t samp = 0; samp < samples_per_px; samp++, cursamp++) {
+					max = MYMAX(max, *cursamp);
+					min = MYMIN(min, *cursamp);
+					if (*cursamp > 0) {
+						num_positive++;
+						avg_positive += *cursamp;
+					}
+					else {
+						num_negative++;
+						avg_negative += *cursamp;
+					}
+				}
+				avg_positive /= num_positive ? num_positive : 1;
+				avg_negative /= num_negative ? num_negative : 1;
+				const size_t vertical_center_px = m_dim.Height / 2; // truncating division
+				const size_t vertical_positive = m_dim.Height - vertical_center_px;
+				const size_t vertical_negative = m_dim.Height - vertical_positive;
+				const long yfrom = squeeze16(avg_negative, vertical_positive, vertical_negative);
+				const long yto   = squeeze16(avg_positive, vertical_positive, vertical_negative);
+				assert(yfrom <= yto);
+				for (long y = yfrom; y <= yto; y++) // <=
+					img_r->setPixel(drawbase + x, vertical_center_px + y, video::SColor(255, 255, 255, 0));
+				img_r->setPixel(drawbase + x, vertical_center_px + squeeze16(max, vertical_positive, vertical_negative), video::SColor(255, 255, 0, 0));
+				img_r->setPixel(drawbase + x, vertical_center_px + squeeze16(min, vertical_positive, vertical_negative), video::SColor(255, 255, 0, 0));
+			}
+		}
+
+		void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r) override
+		{
+			if (m_frames.empty()) {
+				drawFrame(scrollby, drawbase, img_r, m_framedummy);
+			}
+			else {
+				drawFrame(scrollby, drawbase, img_r, m_frames.front());
+				m_frames.pop_front();
+			}
+		}
+
+		virtual size_t virtualScrollByHelper() override
+		{
+			return m_scrollby;
+		}
+
+	private:
+		size_t m_scrollby;
+		std::string m_framedummy;
+		std::deque<std::string> m_frames;
+	};
+
 	VServHud() :
 		m_driver(RenderingEngine::get_video_driver()),
 		m_dim(640, 128),
-		m_scroll(new HudScroll(m_dim.Width, m_dim.Height, 0)),
+		//m_scroll(new HudScrollYellow(m_dim.Width, m_dim.Height, 0)),
+		m_scroll(new HudScrollFrame(m_dim.Width, m_dim.Height, 0, 16)),
 		m_queue_msg(),
 		m_queue_mutex()
 	{}
