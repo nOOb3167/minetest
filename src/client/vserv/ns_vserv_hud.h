@@ -26,8 +26,9 @@ public:
 	{
 	public:
 
-		HudScroll(size_t width, size_t height, size_t uniq_texname_id) :
+		HudScroll(size_t x, size_t y, size_t width, size_t height, size_t uniq_texname_id) :
 			m_driver(RenderingEngine::get_video_driver()),
+			m_off(x, y),
 			m_dim(width, height),
 			m_name    {},
 			m_image   { NULL, NULL },
@@ -111,8 +112,8 @@ public:
 			video::ITexture *& tex_r = m_texture[m_imgidx];
 			video::ITexture *& tex_l = m_texture[(m_imgidx + 1) % 2];
 
-			m_driver->draw2DImage(tex_r, core::vector2di(m_imgpos, 0), core::recti(0, 0, m_dim.Width - m_imgpos, m_dim.Height));
-			m_driver->draw2DImage(tex_l, core::vector2di(0, 0), core::recti(m_dim.Width - m_imgpos, 0, m_dim.Width, m_dim.Height));
+			m_driver->draw2DImage(tex_r, m_off + core::vector2di(m_imgpos, 0), core::recti(0, 0, m_dim.Width - m_imgpos, m_dim.Height));
+			m_driver->draw2DImage(tex_l, m_off + core::vector2di(0, 0), core::recti(m_dim.Width - m_imgpos, 0, m_dim.Width, m_dim.Height));
 
 			scrollPostAdjust();
 		}
@@ -124,6 +125,7 @@ public:
 	protected:
 		video::IVideoDriver * m_driver;
 
+		core::vector2di        m_off;
 		core::dimension2d<u32> m_dim;
 		std::string       m_name[2];
 		video::IImage   * m_image[2];
@@ -136,7 +138,7 @@ public:
 	{
 	public:
 		HudScrollYellow(size_t width, size_t height, size_t uniq_texname_id) :
-			HudScroll(width, height, uniq_texname_id)
+			HudScroll(0, 0, width, height, uniq_texname_id)
 		{}
 
 		void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r) override
@@ -157,8 +159,8 @@ public:
 	class HudScrollFrame : public HudScroll
 	{
 	public:
-		HudScrollFrame(size_t width, size_t height, size_t uniq_texname_id, size_t scrollby) :
-			HudScroll(width, height, uniq_texname_id),
+		HudScrollFrame(size_t x, size_t y, size_t width, size_t height, size_t uniq_texname_id, size_t scrollby) :
+			HudScroll(x, y, width, height, uniq_texname_id),
 			m_scrollby(scrollby),
 			m_framedummy(GS_OPUS_FRAME_48KHZ_20MS_SAMP_NUM * sizeof(int16_t), '\0'),
 			m_frames()
@@ -242,7 +244,7 @@ public:
 		m_driver(RenderingEngine::get_video_driver()),
 		m_dim(640, 128),
 		//m_scroll(new HudScrollYellow(m_dim.Width, m_dim.Height, 0)),
-		m_scroll(new HudScrollFrame(m_dim.Width, m_dim.Height, 0, 16)),
+		m_scroll(new HudScrollFrame(0, 0, m_dim.Width, m_dim.Height, 0, 16)),
 		m_queue_msg(),
 		m_queue_mutex()
 	{}
