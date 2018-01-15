@@ -150,7 +150,7 @@ public:
 			}
 		}
 
-		virtual size_t virtualScrollByHelper() override
+		size_t virtualScrollByHelper() override
 		{
 			return 16;
 		}
@@ -229,7 +229,7 @@ public:
 			}
 		}
 
-		virtual size_t virtualScrollByHelper() override
+		size_t virtualScrollByHelper() override
 		{
 			return m_scrollby;
 		}
