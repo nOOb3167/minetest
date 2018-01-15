@@ -167,6 +167,11 @@ public:
 		ctl->m_hud->drawSpectr();
 	}
 
+	static void s_enqueueframehud(VServClntCtl *ctl, std::string frame)
+	{
+		ctl->m_hud->enqueueFrame(std::move(frame));
+	}
+
 private:
 	VServHud * m_hud  = NULL;
 	VServClnt *m_clnt = NULL;

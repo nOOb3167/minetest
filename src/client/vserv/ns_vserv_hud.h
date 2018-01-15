@@ -7,6 +7,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <client/renderingengine.h>
 #include <irrlichttypes_extrabloated.h>
@@ -99,6 +100,9 @@ public:
 			if (m_imgpos == 0) {
 				m_imgpos = m_dim.Width;
 				m_imgidx = (m_imgidx + 1) % 2;
+
+				video::IImage *img_r = m_image[m_imgidx];
+				img_r->fill(video::SColor(255, 0, 0, 0));
 			}
 		}
 
@@ -234,6 +238,11 @@ public:
 			return m_scrollby;
 		}
 
+		void enqueueFrame(std::string frame)
+		{
+			m_frames.push_back(std::move(frame));
+		}
+
 	private:
 		size_t m_scrollby;
 		std::string m_framedummy;
@@ -244,7 +253,7 @@ public:
 		m_driver(RenderingEngine::get_video_driver()),
 		m_dim(640, 128),
 		//m_scroll(new HudScrollYellow(m_dim.Width, m_dim.Height, 0)),
-		m_scroll(new HudScrollFrame(0, 0, m_dim.Width, m_dim.Height, 0, 16)),
+		m_scroll(new HudScrollFrame(0, 0, m_dim.Width, m_dim.Height, 0, 20)),
 		m_queue_msg(),
 		m_queue_mutex()
 	{}
@@ -254,11 +263,16 @@ public:
 		m_scroll->draw();
 	}
 
+	void enqueueFrame(std::string frame)
+	{
+		m_scroll->enqueueFrame(std::move(frame));
+	}
+
 private:
 	video::IVideoDriver * m_driver = NULL;
 
 	core::dimension2d<u32>     m_dim;
-	std::unique_ptr<HudScroll> m_scroll;
+	std::unique_ptr<HudScrollFrame> m_scroll;
 
 	std::deque<HudMsg> m_queue_msg;
 	std::mutex         m_queue_mutex;

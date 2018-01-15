@@ -611,6 +611,8 @@ void VServClnt::updateOther(long long timestamp, uint32_t keys)
 		uint8_t mode = (keys >> 0) & 0xFF;
 		uint16_t blk = (keys >> 8) & 0xFFFF;
 		updateRecord(timestamp, mode, blk, fra_buf);
+		/* visualization / debugging */
+		m_ctl->s_enqueueframehud(m_ctl, std::move(fra_buf));
 	}
 
 	/* network receiving and general network processing
