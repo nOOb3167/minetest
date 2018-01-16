@@ -108,23 +108,31 @@ public:
 
 		void draw()
 		{
-			const size_t scrollby = virtualScrollByHelper();
+			const size_t scrolltimes = virtualScrollTimesHelper();
 
-			if (scrollby)
-				scrollTexture(scrollby);
+			for (size_t i = 0; i < scrolltimes - 1; i++) {
+				scrollTexture(virtualScrollByHelper());
+				/* optimize by drawing only on the last time */
+				scrollPostAdjust();
+			}
+			for (size_t i = scrolltimes - 1; i < scrolltimes; i++) {
+				scrollTexture(virtualScrollByHelper());
 
-			video::ITexture *& tex_r = m_texture[m_imgidx];
-			video::ITexture *& tex_l = m_texture[(m_imgidx + 1) % 2];
+				video::ITexture *& tex_r = m_texture[m_imgidx];
+				video::ITexture *& tex_l = m_texture[(m_imgidx + 1) % 2];
 
-			m_driver->draw2DImage(tex_r, m_off + core::vector2di(m_imgpos, 0), core::recti(0, 0, m_dim.Width - m_imgpos, m_dim.Height));
-			m_driver->draw2DImage(tex_l, m_off + core::vector2di(0, 0), core::recti(m_dim.Width - m_imgpos, 0, m_dim.Width, m_dim.Height));
+				m_driver->draw2DImage(tex_r, m_off + core::vector2di(m_imgpos, 0), core::recti(0, 0, m_dim.Width - m_imgpos, m_dim.Height));
+				m_driver->draw2DImage(tex_l, m_off + core::vector2di(0, 0), core::recti(m_dim.Width - m_imgpos, 0, m_dim.Width, m_dim.Height));
 
-			scrollPostAdjust();
+				scrollPostAdjust();
+			}
 		}
 
 		virtual void virtualScrollTextureHelper(size_t scrollby, size_t drawbase, video::IImage *img_r) = 0;
 
 		virtual size_t virtualScrollByHelper() = 0;
+
+		virtual size_t virtualScrollTimesHelper() = 0;
 
 	protected:
 		video::IVideoDriver * m_driver;
@@ -157,6 +165,11 @@ public:
 		size_t virtualScrollByHelper() override
 		{
 			return 16;
+		}
+
+		size_t virtualScrollTimesHelper() override
+		{
+			return 1;
 		}
 	};
 
@@ -236,6 +249,14 @@ public:
 		size_t virtualScrollByHelper() override
 		{
 			return m_scrollby;
+		}
+
+		size_t virtualScrollTimesHelper() override
+		{
+			if (m_frames.empty())
+				return 1;
+			else
+				return m_frames.size();
 		}
 
 		void enqueueFrame(std::string frame)
