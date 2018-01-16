@@ -391,6 +391,8 @@ void GsPlayBack::harvest(long long timestamp, std::vector<std::pair<ALuint, uniq
 				opusfra_buf = itFlow->second.decodeFrameMissing();
 			alBufferData(*buffer, AL_FORMAT_MONO16, opusfra_buf.data(), opusfra_buf.size(), GS_48KHZ);
 			warn_if_error(alGetError(), "PlayBack buffer data");
+			/* visualization / debugging */
+			g_vserv_clnt_ctl->s_enqueueframehud2(g_vserv_clnt_ctl, opusfra_buf);
 			/* emit */
 			out_buffer_vec->push_back(std::make_pair(*itFlow->second.m_source, std::move(buffer)));
 		}

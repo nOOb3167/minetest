@@ -172,6 +172,11 @@ public:
 		ctl->m_hud->enqueueFrame(std::move(frame));
 	}
 
+	static void s_enqueueframehud2(VServClntCtl *ctl, std::string frame)
+	{
+		ctl->m_hud->enqueueFrame2(std::move(frame));
+	}
+
 private:
 	VServHud * m_hud  = NULL;
 	VServClnt *m_clnt = NULL;

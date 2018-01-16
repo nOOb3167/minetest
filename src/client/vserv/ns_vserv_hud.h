@@ -273,8 +273,8 @@ public:
 	VServHud() :
 		m_driver(RenderingEngine::get_video_driver()),
 		m_dim(640, 128),
-		//m_scroll(new HudScrollYellow(m_dim.Width, m_dim.Height, 0)),
-		m_scroll(new HudScrollFrame(0, 0, m_dim.Width, m_dim.Height, 0, 20)),
+		m_scroll(new HudScrollFrame(0, 0                , m_dim.Width, m_dim.Height, 0, 20)),
+		m_scroll2(new HudScrollFrame(0, m_dim.Height + 8, m_dim.Width, m_dim.Height, 0, 20)),
 		m_queue_msg(),
 		m_queue_mutex()
 	{}
@@ -282,6 +282,7 @@ public:
 	void drawSpectr()
 	{
 		m_scroll->draw();
+		m_scroll2->draw();
 	}
 
 	void enqueueFrame(std::string frame)
@@ -289,11 +290,17 @@ public:
 		m_scroll->enqueueFrame(std::move(frame));
 	}
 
+	void enqueueFrame2(std::string frame)
+	{
+		m_scroll2->enqueueFrame(std::move(frame));
+	}
+
 private:
 	video::IVideoDriver * m_driver = NULL;
 
 	core::dimension2d<u32>     m_dim;
 	std::unique_ptr<HudScrollFrame> m_scroll;
+	std::unique_ptr<HudScrollFrame> m_scroll2;
 
 	std::deque<HudMsg> m_queue_msg;
 	std::mutex         m_queue_mutex;
