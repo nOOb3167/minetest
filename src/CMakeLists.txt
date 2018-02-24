@@ -500,12 +500,10 @@ set(client_SRCS
 	content_cao.cpp
 	content_cso.cpp
 	content_mapblock.cpp
-	convert_json.cpp
 	filecache.cpp
 	fontengine.cpp
 	game.cpp
 	guiscalingfilter.cpp
-	hud.cpp
 	imagefilters.cpp
 	keycode.cpp
 	localplayer.cpp
