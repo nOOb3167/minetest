@@ -102,7 +102,7 @@ if(BUILD_CLIENT AND ENABLE_SOUND)
 endif()
 
 if(USE_SOUND)
-	set(sound_SRCS sound_openal.cpp)
+	set(sound_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/sound_openal.cpp)
 	set(SOUND_INCLUDE_DIRS
 		${OPENAL_INCLUDE_DIR}
 		${VORBIS_INCLUDE_DIR}
@@ -383,72 +383,72 @@ add_subdirectory(irrlicht_changes)
 set(common_SRCS
 	${database_SRCS}
 	${mapgen_SRCS}
-	ban.cpp
-	chat.cpp
-	clientiface.cpp
-	collision.cpp
-	content_mapnode.cpp
-	content_nodemeta.cpp
-	content_sao.cpp
-	convert_json.cpp
-	craftdef.cpp
-	debug.cpp
-	defaultsettings.cpp
-	emerge.cpp
-	environment.cpp
-	face_position_cache.cpp
-	filesys.cpp
-	genericobject.cpp
-	gettext.cpp
-	httpfetch.cpp
-	inventory.cpp
-	inventorymanager.cpp
-	itemdef.cpp
-	itemstackmetadata.cpp
-	light.cpp
-	log.cpp
-	map.cpp
-	map_settings_manager.cpp
-	mapblock.cpp
-	mapnode.cpp
-	mapsector.cpp
-	metadata.cpp
-	modchannels.cpp
-	mods.cpp
-	nameidmapping.cpp
-	nodedef.cpp
-	nodemetadata.cpp
-	nodetimer.cpp
-	noise.cpp
-	objdef.cpp
-	object_properties.cpp
-	pathfinder.cpp
-	player.cpp
-	porting.cpp
-	profiler.cpp
-	quicktune.cpp
-	raycast.cpp
-	reflowscan.cpp
-	remoteplayer.cpp
-	rollback.cpp
-	rollback_interface.cpp
-	serialization.cpp
-	server.cpp
-	serverenvironment.cpp
-	serverlist.cpp
-	serverobject.cpp
-	settings.cpp
-	sound.cpp
-	staticobject.cpp
-	subgame.cpp
-	terminal_chat_console.cpp
-	tileanimation.cpp
-	tool.cpp
-	translation.cpp
-	version.cpp
-	voxel.cpp
-	voxelalgorithms.cpp
-	hud.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ban.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/chat.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientiface.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/collision.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_mapnode.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_nodemeta.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_sao.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/convert_json.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/craftdef.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/debug.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/defaultsettings.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/emerge.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/environment.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/face_position_cache.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/filesys.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/genericobject.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/gettext.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/httpfetch.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/inventory.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/inventorymanager.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/itemdef.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/itemstackmetadata.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/light.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/log.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/map.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/map_settings_manager.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mapblock.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mapnode.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mapsector.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/metadata.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/modchannels.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mods.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/nameidmapping.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/nodedef.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/nodemetadata.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/nodetimer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/noise.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/objdef.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/object_properties.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/pathfinder.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/player.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/porting.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/profiler.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/quicktune.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/raycast.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/reflowscan.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/remoteplayer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/rollback.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/rollback_interface.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/serialization.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/server.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/serverenvironment.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/serverlist.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/serverobject.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/settings.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/sound.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/staticobject.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/subgame.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/terminal_chat_console.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/tileanimation.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/tool.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/translation.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/version.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/voxel.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/voxelalgorithms.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/hud.cpp
 	${common_network_SRCS}
 	${JTHREAD_SRCS}
 	${common_SCRIPT_SRCS}
@@ -490,32 +490,32 @@ set(client_SRCS
 	${sound_SRCS}
 	${client_network_SRCS}
 	${client_irrlicht_changes_SRCS}
-	camera.cpp
-	client.cpp
-	clientenvironment.cpp
-	clientmap.cpp
-	clientmedia.cpp
-	clientobject.cpp
-	clouds.cpp
-	content_cao.cpp
-	content_cso.cpp
-	content_mapblock.cpp
-	filecache.cpp
-	fontengine.cpp
-	game.cpp
-	guiscalingfilter.cpp
-	imagefilters.cpp
-	keycode.cpp
-	localplayer.cpp
-	main.cpp
-	mapblock_mesh.cpp
-	mesh.cpp
-	mesh_generator_thread.cpp
-	minimap.cpp
-	particles.cpp
-	shader.cpp
-	sky.cpp
-	wieldmesh.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/camera.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/client.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientenvironment.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientmap.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientmedia.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clientobject.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/clouds.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_cao.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_cso.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/content_mapblock.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/filecache.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/fontengine.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/game.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiscalingfilter.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imagefilters.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/keycode.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/localplayer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mapblock_mesh.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mesh.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/mesh_generator_thread.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/minimap.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/particles.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/shader.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/sky.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/wieldmesh.cpp
 	${client_SCRIPT_SRCS}
 	${UNITTEST_CLIENT_SRCS}
 )
@@ -524,7 +524,7 @@ list(SORT client_SRCS)
 # Server sources
 set(server_SRCS
 	${common_SRCS}
-	main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 list(SORT server_SRCS)
 
