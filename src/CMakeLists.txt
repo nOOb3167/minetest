@@ -235,6 +235,22 @@ if(ENABLE_SPATIAL)
 endif(ENABLE_SPATIAL)
 
 
+OPTION(ENABLE_DISCORD "Enable discord rich presence" TRUE)
+set(USE_DISCORD FALSE)
+
+if(ENABLE_DISCORD)
+	find_library(DISCORD_LIBRARY discord-rpc)
+	find_path(DISCORD_INCLUDE_DIR discord_rpc.h PATH_SUFFIXES discord-rpc)
+	if(DISCORD_LIBRARY AND DISCORD_INCLUDE_DIR)
+		set(USE_DISCORD TRUE)
+		message(STATUS "Discord rich presence enabled.")
+		include_directories(${DISCORD_INCLUDE_DIR})
+	else(DISCORD_LIBRARY AND DISCORD_INCLUDE_DIR)
+		message(STATUS "Discord rich presence not found!")
+	endif(DISCORD_LIBRARY AND DISCORD_INCLUDE_DIR)
+endif(ENABLE_DISCORD)
+
+
 if(NOT MSVC)
 	set(USE_GPROF FALSE CACHE BOOL "Use -pg flag for g++")
 endif()
@@ -618,6 +634,9 @@ if(BUILD_CLIENT)
 	endif()
 	if (USE_SPATIAL)
 		target_link_libraries(${PROJECT_NAME} ${SPATIAL_LIBRARY})
+	endif()
+	if (USE_DISCORD)
+		target_link_libraries(${PROJECT_NAME} ${DISCORD_LIBRARY})
 	endif()
 endif(BUILD_CLIENT)
 

@@ -19,8 +19,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#include <memory>
+
 #include "irrlichttypes_extrabloated.h"
 #include "client/inputhandler.h"
+#include "client/discord.h"
 #include "gameparams.h"
 
 class RenderingEngine;
@@ -60,6 +63,8 @@ protected:
 	SubgameSpec gamespec;
 	WorldSpec worldspec;
 	bool simple_singleplayer_mode = false;
+
+	std::shared_ptr<Discord> discord = std::shared_ptr<Discord>(new Discord());
 
 	// These are set up based on the menu and other things
 	// TODO: Are these required since there's already playername, password, etc

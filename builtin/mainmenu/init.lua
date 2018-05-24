@@ -22,6 +22,12 @@ mt_color_dark_green = "#25C191"
 
 --for all other colors ask sfan5 to complete his work!
 
+local discord = core.request_discord_api()
+
+if (discord) then
+	discord.update_presence({ state="Menu", details="Main" })
+end
+
 local menupath = core.get_mainmenu_path()
 local basepath = core.get_builtin_path()
 local menustyle = core.settings:get("main_menu_style")

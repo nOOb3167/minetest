@@ -15,6 +15,8 @@
 --with this program; if not, write to the Free Software Foundation, Inc.,
 --51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+local discord = core.request_discord_api()
+
 --------------------------------------------------------------------------------
 local function get_formspec(tabview, name, tabdata)
 	-- Update the cached supported proto info,
@@ -167,6 +169,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 				if gamedata.address and gamedata.port then
 					core.settings:set("address", gamedata.address)
 					core.settings:set("remote_port", gamedata.port)
+
+					if (discord) then
+						discord.update_presence({ state="Playing1", details=gamedata.servername })
+					end
+
 					core.start()
 				end
 			end
@@ -336,6 +343,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 		core.settings:set("address",     fields.te_address)
 		core.settings:set("remote_port", fields.te_port)
+
+		if (discord) then
+			discord.update_presence({ state="Playing2", details=gamedata.servername })
+		end
 
 		core.start()
 		return true

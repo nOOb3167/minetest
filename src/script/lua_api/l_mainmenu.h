@@ -145,6 +145,8 @@ private:
 	// async
 	static int l_do_async_callback(lua_State *L);
 
+	static int l_request_discord_api(lua_State *L);
+
 public:
 
 	/**

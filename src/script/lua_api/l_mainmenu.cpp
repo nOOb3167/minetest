@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lua_api/l_mainmenu.h"
 #include "lua_api/l_internal.h"
+#include "client/discord.h"
 #include "common/c_content.h"
 #include "cpp_api/s_async.h"
 #include "gui/guiEngine.h"
@@ -1101,6 +1102,18 @@ int ModApiMainMenu::l_do_async_callback(lua_State *L)
 }
 
 /******************************************************************************/
+int ModApiMainMenu::l_request_discord_api(lua_State *L)
+{
+	lua_newtable(L);
+
+	int top = lua_gettop(L);
+
+	DISCORD_API(update_presence);
+
+	return 1;
+}
+
+/******************************************************************************/
 void ModApiMainMenu::Initialize(lua_State *L, int top)
 {
 	API_FCT(update_formspec);
@@ -1140,6 +1153,7 @@ void ModApiMainMenu::Initialize(lua_State *L, int top)
 	API_FCT(get_min_supp_proto);
 	API_FCT(get_max_supp_proto);
 	API_FCT(do_async_callback);
+	API_FCT(request_discord_api);
 }
 
 /******************************************************************************/
