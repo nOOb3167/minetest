@@ -183,11 +183,28 @@ int ModApiHttp::l_request_http_api(lua_State *L)
 
 	return 1;
 }
+
+int ModApiHttp::l_request_http_api_mainmenu_trusted(lua_State *L)
+{
+	lua_newtable(L);
+
+	HTTP_API(fetch_async);
+	HTTP_API(fetch_async_get);
+
+	return 1;
+}
 #endif
 
 void ModApiHttp::Initialize(lua_State *L, int top)
 {
 #if USE_CURL
 	API_FCT(request_http_api);
+#endif
+}
+
+void ModApiHttp::InitializeMainMenu(lua_State *L, int top)
+{
+#if USE_CURL
+	API_FCT(request_http_api_mainmenu_trusted);
 #endif
 }

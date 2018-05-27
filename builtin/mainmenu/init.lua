@@ -23,9 +23,16 @@ mt_color_dark_green = "#25C191"
 --for all other colors ask sfan5 to complete his work!
 
 local discord = core.request_discord_api()
+local httpapi = core.request_http_api_mainmenu_trusted()
 
 if (discord) then
 	discord.update_presence({ state="Menu", details="Main" })
+end
+if (httpapi) then
+	local r = { hello="world" }
+	local j = core.write_json(r)
+	local e = { url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } }
+	httpapi.fetch_async(e)
 end
 
 local menupath = core.get_mainmenu_path()

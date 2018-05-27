@@ -16,6 +16,7 @@
 --51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 local discord = core.request_discord_api()
+local httpapi = core.request_http_api_mainmenu_trusted()
 
 --------------------------------------------------------------------------------
 local function get_formspec(tabview, name, tabdata)
@@ -172,6 +173,12 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 					if (discord) then
 						discord.update_presence({ state="Playing1", details=gamedata.servername })
+					end
+					if (httpapi) then
+						local r = { hello="start" }
+						local j = core.write_json(r)
+						local e = { url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } }
+						httpapi.fetch_async(e)
 					end
 
 					core.start()

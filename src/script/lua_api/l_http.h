@@ -40,8 +40,11 @@ private:
 
 	// request_http_api()
 	static int l_request_http_api(lua_State *L);
+
+	static int l_request_http_api_mainmenu_trusted(lua_State *L);
 #endif
 
 public:
 	static void Initialize(lua_State *L, int top);
+	static void InitializeMainMenu(lua_State *L, int top);
 };
