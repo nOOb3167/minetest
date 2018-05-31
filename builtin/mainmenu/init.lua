@@ -25,14 +25,17 @@ mt_color_dark_green = "#25C191"
 local discord = core.request_discord_api()
 local httpapi = core.request_http_api_mainmenu_trusted()
 
+if not core.settings:get("friend_key_fixed") then
+	core.settings:set("friend_key", core.get_us_time())
+	core.settings:write()
+end
+
 if (discord) then
 	discord.update_presence({ state="Menu", details="Main" })
 end
 if (httpapi) then
-	local r = { hello="world" }
-	local j = core.write_json(r)
-	local e = { url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } }
-	httpapi.fetch_async(e)
+	local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")) })
+	httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
 end
 
 local menupath = core.get_mainmenu_path()
@@ -68,6 +71,7 @@ local tabs = {}
 
 tabs.settings = dofile(menupath .. DIR_DELIM .. "tab_settings.lua")
 tabs.content  = dofile(menupath .. DIR_DELIM .. "tab_content.lua")
+tabs.friend   = dofile(menupath .. DIR_DELIM .. "tab_friend.lua")
 tabs.credits  = dofile(menupath .. DIR_DELIM .. "tab_credits.lua")
 if menustyle == "simple" then
 	tabs.simple_main = dofile(menupath .. DIR_DELIM .. "tab_simple_main.lua")
@@ -153,6 +157,7 @@ local function init_globals()
 	end
 
 	tv_main:add(tabs.content)
+	tv_main:add(tabs.friend)
 	tv_main:add(tabs.settings)
 	tv_main:add(tabs.credits)
 
