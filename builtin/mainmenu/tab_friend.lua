@@ -1,51 +1,56 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
+assert(httpapi)
 
+local userlist_refresher = {
+	interval_refresh_ns=5000 * 1000,
+	time_refresh=nil,
+	http_handle=nil,
+	start=function (self)
+		self.time_refresh = core.get_us_time()
+		self:refresh()
+	end,
+	step=function (self)
+		self:refresh()
+		
+		if self.http_handle then
+			local res = httpapi.fetch_async_get(self.http_handle)
+			if res.completed then
+				self.http_handle = nil
+				self.time_refresh = core.get_us_time() + self.interval_refresh_ns
+				
+				print("completed1234")
+			end
+		end
+	end,
+	refresh=function (self)
+			if core.get_us_time() >= self.time_refresh and not self.http_handle then
+				local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
+				local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+				self.http_handle = handle
+			end
+		end
+}
+userlist_refresher:start()
 
 local function asynctestfunc(param)
-	print("paramparam " .. tostring(param))
-	return "returnreturn"
+	userlist_refresher:step()
+	core.handle_async(function (a) return "" end, "", asynctestfunc)
+	return ""
 end
 
-
--- NOTE: must come after async_event.lua to override its value
-local stolen_job_list = {}
-local handle_job_old = core.async_event_handler
-local function handle_job_override(jobid, serialized_retval)
-	print("jobhandler " .. tostring(serialized_retval))
-	if stolen_job_list[jobid] then
-		print("jobhandler_our")
-		local retval = core.deserialize(serialized_retval)
-		assert(type(core.async_jobs[jobid]) == "function")
-		core.async_jobs[jobid](retval)
-		stolen_job_list[jobid] = nil
-		return
-	end
-	return handle_job_old(jobid, serialized_retval)
-end
-core.async_event_handler = handle_job_override
+------ simulate globalstep via async
+core.handle_async(function (a) return "" end, "", asynctestfunc)
 
 
-local function special_core_handle_async(func, parameter, callback)
-	-- differs from core.handle_async by also using the stolen_job_list
-	local serialized_func = string.dump(func)
-	assert(serialized_func ~= nil)
-	local serialized_param = core.serialize(parameter)
-	if serialized_param == nil then return false end
-	local jobid = core.do_async_callback(serialized_func, serialized_param)
-	core.async_jobs[jobid] = callback
-	stolen_job_list[jobid] = true		-- --
-	return true
-end
-
-
+local n = 0
 local function get_formspec(tabview, name, tabdata)
 	local retval =
 		"label[0.05,-0.25;".. fgettext("Online Users:") .. "]" ..
 		"tablecolumns[color;tree;text]" ..
 		"table[0,0.25;5.1,4.3;pkglist;" ..
-		"abcd,efgh,ijkl" .. "]" ..
+		"abcd,efgh,ijkl" .. tostring(n)  .. "]" ..
 		"button[0,4.85;5.25,0.5;btn_contentdb;".. fgettext("Enable Discord Integration") .. "]"
-
+	n = n + 1
 	return retval
 end
 
@@ -63,18 +68,6 @@ end
 
 local function on_change(evt, tab_src, tab_dst)
 	if evt == "ENTER" then
-		--core.handle_async(asynctestfunc, { a="a", b=4 }, function() end)
-		special_core_handle_async(asynctestfunc, { a="a", b=4 }, function() end)
-		if (httpapi) then
-			local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
-			local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
-			local res = httpapi.fetch_async_get(handle)
-			if res.completed then
-				print("completed")
-			else
-				print("net")
-			end
-		end
 	end
 end
 
