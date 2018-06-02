@@ -5,8 +5,10 @@ local userlist_refresher = {
 	interval_refresh_ns=5000 * 1000,
 	time_refresh=nil,
 	http_handle=nil,
+	userlist_data=nil,
 	start=function (self)
 		self.time_refresh = core.get_us_time()
+		self.userlist_data = { userhash=nil, userlist={} }
 		self:refresh()
 	end,
 	step=function (self)
@@ -18,7 +20,13 @@ local userlist_refresher = {
 				self.http_handle = nil
 				self.time_refresh = core.get_us_time() + self.interval_refresh_ns
 				
-				print("completed1234")
+				if res.succeeded and res.code == 200 then
+					local json = core.parse_json(res.data)
+					self.userlist_data = { userhash=json.userhash, userlist=json.userlist }
+					print("completed1234 " .. dump(self.userlist_data))
+				end
+				
+				ui.update()
 			end
 		end
 	end,
@@ -42,15 +50,16 @@ end
 core.handle_async(function (a) return "" end, "", asynctestfunc)
 
 
-local n = 0
 local function get_formspec(tabview, name, tabdata)
+	local cells = ""
+	for i,v in ipairs(userlist_refresher.userlist_data.userlist) do
+		cells = cells .. "#00FF00," .. v .. ","
+	end
 	local retval =
 		"label[0.05,-0.25;".. fgettext("Online Users:") .. "]" ..
-		"tablecolumns[color;tree;text]" ..
-		"table[0,0.25;5.1,4.3;pkglist;" ..
-		"abcd,efgh,ijkl" .. tostring(n)  .. "]" ..
+		"tablecolumns[color;text]" ..
+		"table[0,0.25;5.1,4.3;pkglist;" .. cells .. "]" ..
 		"button[0,4.85;5.25,0.5;btn_contentdb;".. fgettext("Enable Discord Integration") .. "]"
-	n = n + 1
 	return retval
 end
 
