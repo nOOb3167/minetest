@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nodemetadata.h"
 #include "gamedef.h"
 #include "map.h"
+#include "network/connection.h"
 #include "profiler.h"
 #include "raycast.h"
 #include "remoteplayer.h"
@@ -1316,6 +1317,20 @@ void ServerEnvironment::step(float dtime)
 				m_active_block_interval_overload_skip = (time_ms / max_time_ms) + 1;
 			}
 		}while(0);
+
+	/*
+		Step / Dispatch received external events to script environment
+	*/
+	{
+		MutexedQueue<con::ExternalEvent> & queue = m_server->getCon().getExternalEventQueue();
+
+		if (! queue.empty()) {
+			std::vector<con::ExternalEvent> externalevents;
+			while (! queue.empty())
+				externalevents.push_back(queue.pop_front(0));
+			m_script->environment_OnExternalEvent(externalevents);
+		}
+	}
 
 	/*
 		Step script environment (run global on_step())

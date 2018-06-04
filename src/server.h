@@ -286,6 +286,7 @@ public:
 	bool showFormspec(const char *name, const std::string &formspec, const std::string &formname);
 	Map & getMap() { return m_env->getMap(); }
 	ServerEnvironment & getEnv() { return *m_env; }
+	con::Connection   & getCon() { return *m_con; }
 	v3f findSpawnPos();
 
 	u32 hudAdd(RemotePlayer *player, HudElement *element);

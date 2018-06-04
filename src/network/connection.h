@@ -170,6 +170,10 @@ controltype and data description:
 	- There is no actual reply, but this can be sent in a reliable
 	  packet to get a reply
 	CONTROLTYPE_DISCO
+	CONTROLTYPE_EXTERNALEVENT
+		[4]  u32    sender id
+		[10] char[] sender name
+		[?]  ?      unstructured data
 */
 //#define TYPE_CONTROL 0
 #define CONTROLTYPE_ACK 0
@@ -177,6 +181,7 @@ controltype and data description:
 #define CONTROLTYPE_PING 2
 #define CONTROLTYPE_DISCO 3
 #define CONTROLTYPE_ENABLE_BIG_SEND_WINDOW 4
+#define CONTROLTYPE_EXTERNALEVENT 5
 
 /*
 ORIGINAL: This is a plain packet with no control and no error
@@ -766,6 +771,17 @@ struct ConnectionEvent
 	}
 };
 
+struct ExternalEvent
+{
+	u32 m_id;
+	std::string m_name;
+	std::string m_data;
+
+	ExternalEvent(u32 id, const std::string &name, const std::string &data) :
+		m_id(id), m_name(name), m_data(data)
+	{}
+};
+
 class PeerHandler;
 
 class Connection
@@ -781,6 +797,8 @@ public:
 	/* Interface */
 	ConnectionEvent waitEvent(u32 timeout_ms);
 	void putCommand(ConnectionCommand &c);
+
+	MutexedQueue<ExternalEvent> & getExternalEventQueue() { return m_external_event_queue; }
 
 	void SetTimeoutMs(u32 timeout) { m_bc_receive_timeout = timeout; }
 	void Serve(Address bind_addr);
@@ -825,6 +843,7 @@ protected:
 	void TriggerSend();
 private:
 	MutexedQueue<ConnectionEvent> m_event_queue;
+	MutexedQueue<ExternalEvent>   m_external_event_queue;
 
 	session_t m_peer_id = 0;
 	u32 m_protocol_id;

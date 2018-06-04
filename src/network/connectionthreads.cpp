@@ -1238,6 +1238,18 @@ SharedBuffer<u8> ConnectionReceiveThread::handlePacketType_Control(Channel *chan
 	} else if (controltype == CONTROLTYPE_ENABLE_BIG_SEND_WINDOW) {
 		dynamic_cast<UDPPeer *>(peer)->setNonLegacyPeer();
 		throw ProcessedSilentlyException("Got non legacy control");
+	} else if (controltype == CONTROLTYPE_EXTERNALEVENT) {
+		if (packetdata.getSize() < 2 + 4 + 10)
+			throw InvalidIncomingDataException
+				("packetdata.getSize() < 2 + 4 + 10 (EXTERNALEVENT header size)");
+
+		u32 id = readU32(&packetdata[2]);
+		std::string name((const char *) &packetdata[2 + 4], 10);
+		std::string data((const char *) &packetdata[2 + 4 + 10], packetdata.getSize() - (2 + 4 + 10));
+
+		m_connection->getExternalEventQueue().push_back(ExternalEvent(id, name, data));
+
+		throw ProcessedSilentlyException("Got EXTERNALEVENT");
 	} else {
 		LOG(derr_con << m_connection->getDesc()
 			<< "INVALID TYPE_CONTROL: invalid controltype="

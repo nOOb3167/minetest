@@ -41,6 +41,35 @@ void ScriptApiEnv::environment_OnGenerated(v3s16 minp, v3s16 maxp,
 	runCallbacks(3, RUN_CALLBACKS_MODE_FIRST);
 }
 
+void ScriptApiEnv::environment_OnExternalEvent(const std::vector<con::ExternalEvent> &externalevents)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	// Get core.registered_externalevents
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_externalevents");
+	// Call callbacks
+	lua_newtable(L);
+	for (size_t i = 0; i < externalevents.size(); i++) {
+		lua_newtable(L);
+		lua_pushnumber(L, externalevents[i].m_id);
+		lua_setfield(L, -2, "id");
+		lua_pushlstring(L, externalevents[i].m_name.data(), externalevents[i].m_name.size());
+		lua_setfield(L, -2, "name");
+		lua_pushlstring(L, externalevents[i].m_data.data(), externalevents[i].m_data.size());
+		lua_setfield(L, -2, "data");
+		// append array
+		lua_rawseti(L, -2, i + 1);
+	}
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getServer()->setAsyncFatalError(
+				std::string("environment_OnExternalEvent: ") + e.what() + "\n"
+				+ script_get_backtrace(L));
+	}
+}
+
 void ScriptApiEnv::environment_Step(float dtime)
 {
 	SCRIPTAPI_PRECHECKHEADER

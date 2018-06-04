@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "cpp_api/s_base.h"
 #include "irr_v3d.h"
+#include "network/connection.h"
 
 class ServerEnvironment;
 struct ScriptCallbackState;
@@ -33,6 +34,9 @@ public:
 
 	// Called after generating a piece of map
 	void environment_OnGenerated(v3s16 minp, v3s16 maxp, u32 blockseed);
+
+	// Called on external event (specially formatted network packet)
+	void environment_OnExternalEvent(const std::vector<con::ExternalEvent> &externalevents);
 
 	// Called on player event
 	void player_event(ServerActiveObject *player, const std::string &type);
