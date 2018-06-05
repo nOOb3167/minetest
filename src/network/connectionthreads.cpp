@@ -544,6 +544,16 @@ void ConnectionSendThread::connect(Address address)
 	m_connection->SetPeerID(PEER_ID_INEXISTENT);
 	NetworkPacket pkt(0, 0);
 	m_connection->Send(PEER_ID_SERVER, 0, &pkt, true);
+
+	// passing two individual bytes as an u16 command that will be written out big endian
+
+	SharedBuffer<u8> b(2 + 4 + 10);
+	b[0]=0;b[1]=5;
+	b[2]=0;b[3]=0;b[4]=0;b[5]=0;
+	memcpy((*b) + 2 + 4, "HellOHellO", 10);
+	ConnectionCommand cmd;
+	cmd.disableLegacy(PEER_ID_SERVER, b);
+	m_connection->putCommand(cmd);
 }
 
 void ConnectionSendThread::disconnect()
@@ -1246,7 +1256,9 @@ SharedBuffer<u8> ConnectionReceiveThread::handlePacketType_Control(Channel *chan
 		session_t peer_id = peer->id;
 		u32 id = readU32(&packetdata[2]);
 		std::string name((const char *) &packetdata[2 + 4], 10);
-		std::string data((const char *) &packetdata[2 + 4 + 10], packetdata.getSize() - (2 + 4 + 10));
+		std::string data;
+		if (packetdata.getSize() > (2 + 4 + 10))
+			data = std::string((const char *)&packetdata[2 + 4 + 10], packetdata.getSize() - (2 + 4 + 10));
 
 		m_connection->getExternalEventQueue().push_back(ExternalEvent(peer_id, id, name, data));
 
