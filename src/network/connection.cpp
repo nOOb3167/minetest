@@ -1298,12 +1298,9 @@ void Connection::Connect(Address address)
 	c.connect(address);
 	putCommand(c);
 
-	SharedBuffer<u8> b(2 + 4 + 10);
-	b[0] = 0; b[1] = 5;
-	b[2] = 0; b[3] = 0; b[4] = 0; b[5] = 0;
-	memcpy((*b) + 2 + 4, "HellOHellO", 10);
+	ExternalEvent ee(PEER_ID_SERVER, 0, "HellOHellO", "");
 	ConnectionCommand c2;
-	c2.disableLegacy(PEER_ID_SERVER, b);
+	c2.disableLegacy(PEER_ID_SERVER, ee.getAsExternalEventPacketData());
 	putCommand(c2);
 }
 

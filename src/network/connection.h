@@ -27,6 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/container.h"
 #include "util/thread.h"
 #include "util/numeric.h"
+#include "util/serialize.h"
+#include "networkpacket.h"
 #include "networkprotocol.h"
 #include <iostream>
 #include <fstream>
@@ -780,7 +782,34 @@ struct ExternalEvent
 
 	ExternalEvent(session_t peer_id, u32 id, const std::string &name, const std::string &data) :
 		m_peer_id(peer_id), m_id(id), m_name(name), m_data(data)
-	{}
+	{
+		assert(m_name.size() <= 10);
+		m_name.resize(10, '\0');
+	}
+
+	static ExternalEvent makeFromExternalEventPacketData(session_t peer_id, u8 *p, size_t l)
+	{
+		const size_t header_size = 4 + 10;
+
+		if (l < header_size)
+			throw InvalidIncomingDataException("EXTERNALEVENT header size");
+
+		ExternalEvent ee(peer_id, readU32(p + 0),
+			std::string((const char *) p + 4, 10),
+			std::string((const char *) p + header_size, l - header_size));
+		return ee;
+	}
+
+	SharedBuffer<u8> getAsExternalEventPacketData()
+	{
+		NetworkPacket tmp;
+		tmp << (u8) PACKET_TYPE_CONTROL;
+		tmp << (u8) CONTROLTYPE_EXTERNALEVENT;
+		tmp << m_id;
+		tmp.putRawString(m_name);
+		tmp.putRawString(m_data);
+		return SharedBuffer<u8>((u8 *) tmp.getString(0), tmp.getSize());
+	}
 };
 
 class PeerHandler;
