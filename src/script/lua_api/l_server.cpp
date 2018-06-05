@@ -263,6 +263,19 @@ int ModApiServer::l_get_player_information(lua_State *L)
 	return 1;
 }
 
+// get_player_name_from_peer_id(peer_id)
+int ModApiServer::l_get_player_name_from_peer_id(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	lua_Number peer_id = luaL_checknumber(L, 1);
+	RemotePlayer *player = dynamic_cast<ServerEnvironment *>(getEnv(L))->getPlayer(peer_id);
+	if (player == NULL)
+		lua_pushnil(L);
+	else
+		lua_pushstring(L, player->getName());
+	return 1;
+}
+
 // get_ban_list()
 int ModApiServer::l_get_ban_list(lua_State *L)
 {
@@ -529,6 +542,7 @@ void ModApiServer::Initialize(lua_State *L, int top)
 	API_FCT(get_player_information);
 	API_FCT(get_player_privs);
 	API_FCT(get_player_ip);
+	API_FCT(get_player_name_from_peer_id);
 	API_FCT(get_ban_list);
 	API_FCT(get_ban_description);
 	API_FCT(ban_player);

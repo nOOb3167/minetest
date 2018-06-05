@@ -773,12 +773,13 @@ struct ConnectionEvent
 
 struct ExternalEvent
 {
+	session_t m_peer_id;
 	u32 m_id;
 	std::string m_name;
 	std::string m_data;
 
-	ExternalEvent(u32 id, const std::string &name, const std::string &data) :
-		m_id(id), m_name(name), m_data(data)
+	ExternalEvent(session_t peer_id, u32 id, const std::string &name, const std::string &data) :
+		m_peer_id(peer_id), m_id(id), m_name(name), m_data(data)
 	{}
 };
 

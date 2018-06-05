@@ -52,6 +52,8 @@ void ScriptApiEnv::environment_OnExternalEvent(const std::vector<con::ExternalEv
 	lua_newtable(L);
 	for (size_t i = 0; i < externalevents.size(); i++) {
 		lua_newtable(L);
+		lua_pushnumber(L, externalevents[i].m_peer_id);
+		lua_setfield(L, -2, "peer_id");
 		lua_pushnumber(L, externalevents[i].m_id);
 		lua_setfield(L, -2, "id");
 		lua_pushlstring(L, externalevents[i].m_name.data(), externalevents[i].m_name.size());

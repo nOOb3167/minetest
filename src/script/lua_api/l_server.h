@@ -79,6 +79,9 @@ private:
 	// get_player_information(name)
 	static int l_get_player_information(lua_State *L);
 
+	// get_player_name_from_peer_id(peer_id)
+	static int l_get_player_name_from_peer_id(lua_State *L);
+
 	// get_ban_list()
 	static int l_get_ban_list(lua_State *L);
 

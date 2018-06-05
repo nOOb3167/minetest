@@ -1243,11 +1243,12 @@ SharedBuffer<u8> ConnectionReceiveThread::handlePacketType_Control(Channel *chan
 			throw InvalidIncomingDataException
 				("packetdata.getSize() < 2 + 4 + 10 (EXTERNALEVENT header size)");
 
+		session_t peer_id = peer->id;
 		u32 id = readU32(&packetdata[2]);
 		std::string name((const char *) &packetdata[2 + 4], 10);
 		std::string data((const char *) &packetdata[2 + 4 + 10], packetdata.getSize() - (2 + 4 + 10));
 
-		m_connection->getExternalEventQueue().push_back(ExternalEvent(id, name, data));
+		m_connection->getExternalEventQueue().push_back(ExternalEvent(peer_id, id, name, data));
 
 		throw ProcessedSilentlyException("Got EXTERNALEVENT");
 	} else {
