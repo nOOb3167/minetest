@@ -544,16 +544,6 @@ void ConnectionSendThread::connect(Address address)
 	m_connection->SetPeerID(PEER_ID_INEXISTENT);
 	NetworkPacket pkt(0, 0);
 	m_connection->Send(PEER_ID_SERVER, 0, &pkt, true);
-
-	// passing two individual bytes as an u16 command that will be written out big endian
-
-	SharedBuffer<u8> b(2 + 4 + 10);
-	b[0]=0;b[1]=5;
-	b[2]=0;b[3]=0;b[4]=0;b[5]=0;
-	memcpy((*b) + 2 + 4, "HellOHellO", 10);
-	ConnectionCommand cmd;
-	cmd.disableLegacy(PEER_ID_SERVER, b);
-	m_connection->putCommand(cmd);
 }
 
 void ConnectionSendThread::disconnect()
