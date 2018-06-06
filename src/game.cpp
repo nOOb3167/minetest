@@ -640,6 +640,7 @@ public:
 			const std::string &map_dir,
 			const std::string &playername,
 			const std::string &password,
+			const std::string &external_event_on_connect_data,
 			// If address is "", local server is used and address is updated
 			std::string *address,
 			u16 port,
@@ -665,14 +666,14 @@ protected:
 			const SubgameSpec &gamespec, u16 port, std::string *address);
 
 	// Client creation
-	bool createClient(const std::string &playername,
-			const std::string &password, std::string *address, u16 port);
+	bool createClient(const std::string &playername, const std::string &password,
+			const std::string &external_event_on_connect_data, std::string *address, u16 port);
 	bool initGui();
 
 	// Client connection
-	bool connectToServer(const std::string &playername,
-			const std::string &password, std::string *address, u16 port,
-			bool *connect_ok, bool *aborted);
+	bool connectToServer(const std::string &playername, const std::string &password,
+			const std::string &external_event_on_connect_data, std::string *address,
+			u16 port, bool *connect_ok, bool *connection_aborted);
 	bool getServerContent(bool *aborted);
 
 	// Main loop
@@ -988,6 +989,7 @@ bool Game::startup(bool *kill,
 		const std::string &map_dir,
 		const std::string &playername,
 		const std::string &password,
+		const std::string &external_event_on_connect_data,
 		std::string *address,     // can change if simple_singleplayer_mode
 		u16 port,
 		std::string &error_message,
@@ -1028,7 +1030,8 @@ bool Game::startup(bool *kill,
 	if (!init(map_dir, address, port, gamespec))
 		return false;
 
-	if (!createClient(playername, password, address, port))
+	if (!createClient(playername, password,
+			external_event_on_connect_data, address, port))
 		return false;
 
 	RenderingEngine::initialize(client, hud);
@@ -1275,8 +1278,8 @@ bool Game::createSingleplayerServer(const std::string &map_dir,
 	return true;
 }
 
-bool Game::createClient(const std::string &playername,
-		const std::string &password, std::string *address, u16 port)
+bool Game::createClient(const std::string &playername, const std::string &password,
+		 const std::string &external_event_on_connect_data, std::string *address, u16 port)
 {
 	showOverlayMessage("Creating client...", 0, 10);
 
@@ -1286,8 +1289,8 @@ bool Game::createClient(const std::string &playername,
 
 	bool could_connect, connect_aborted;
 
-	if (!connectToServer(playername, password, address, port,
-			&could_connect, &connect_aborted))
+	if (!connectToServer(playername, password, external_event_on_connect_data,
+			address, port, &could_connect, &connect_aborted))
 		return false;
 
 	if (!could_connect) {
@@ -1418,9 +1421,9 @@ bool Game::initGui()
 	return true;
 }
 
-bool Game::connectToServer(const std::string &playername,
-		const std::string &password, std::string *address, u16 port,
-		bool *connect_ok, bool *connection_aborted)
+bool Game::connectToServer(const std::string &playername, const std::string &password,
+		const std::string &external_event_on_connect_data, std::string *address,
+		u16 port, bool *connect_ok, bool *connection_aborted)
 {
 	*connect_ok = false;	// Let's not be overly optimistic
 	*connection_aborted = false;
@@ -1458,8 +1461,8 @@ bool Game::connectToServer(const std::string &playername,
 		return false;
 	}
 
-	client = new Client(playername.c_str(), password, *address,
-			*draw_control, texture_src, shader_src,
+	client = new Client(playername.c_str(), password, external_event_on_connect_data,
+			*address, *draw_control, texture_src, shader_src,
 			itemdef_manager, nodedef_manager, sound, eventmgr,
 			connect_address.isIPv6(), m_game_ui.get());
 
@@ -4126,6 +4129,7 @@ void the_game(bool *kill,
 		const std::string &map_dir,
 		const std::string &playername,
 		const std::string &password,
+		const std::string &external_event_on_connect_data,
 		const std::string &address,         // If empty local server is created
 		u16 port,
 
@@ -4146,7 +4150,8 @@ void the_game(bool *kill,
 	try {
 
 		if (game.startup(kill, random_input, input, map_dir,
-				playername, password, &server_address, port, error_message,
+				playername, password, external_event_on_connect_data,
+				&server_address, port, error_message,
 				reconnect_requested, &chat_backend, gamespec,
 				simple_singleplayer_mode)) {
 			game.run();

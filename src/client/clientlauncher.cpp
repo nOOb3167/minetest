@@ -239,6 +239,7 @@ bool ClientLauncher::run(GameParams &game_params, const Settings &cmd_args)
 				worldspec.path,
 				current_playername,
 				current_password,
+				external_event_on_connect_data,
 				current_address,
 				current_port,
 				error_message,
@@ -422,6 +423,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 
 	playername = menudata.name;
 	password = menudata.password;
+	external_event_on_connect_data = menudata.external_event_on_connect_data;
 
 	current_playername = playername;
 	current_password   = password;

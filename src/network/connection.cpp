@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <iomanip>
 #include <cerrno>
 #include <algorithm>
+#include <memory>
 #include "connection.h"
 #include "serialization.h"
 #include "log.h"
@@ -1146,12 +1147,13 @@ SharedBuffer<u8> UDPPeer::addSplitPacket(u8 channel, const BufferedPacket &toadd
 */
 
 Connection::Connection(u32 protocol_id, u32 max_packet_size, float timeout,
-		bool ipv6, PeerHandler *peerhandler) :
+		bool ipv6, PeerHandler *peerhandler, std::unique_ptr<ExternalEvent> ee) :
 	m_udpSocket(ipv6),
 	m_protocol_id(protocol_id),
 	m_sendThread(new ConnectionSendThread(max_packet_size, timeout)),
 	m_receiveThread(new ConnectionReceiveThread(max_packet_size)),
-	m_bc_peerhandler(peerhandler)
+	m_bc_peerhandler(peerhandler),
+	m_external_event_on_connect(std::move(ee))
 
 {
 	m_udpSocket.setTimeoutMs(5);
@@ -1298,10 +1300,14 @@ void Connection::Connect(Address address)
 	c.connect(address);
 	putCommand(c);
 
-	ExternalEvent ee(PEER_ID_SERVER, 0, "HellOHellO", "");
-	ConnectionCommand c2;
-	c2.disableLegacy(PEER_ID_SERVER, ee.getAsExternalEventPacketData());
-	putCommand(c2);
+	if (m_external_event_on_connect) {
+		ConnectionCommand c2;
+		// FIXME: disableLegacy is able to serve arbitrary package data
+		//   is it worth introducing another kind specifically for externalevents?
+		c2.disableLegacy(PEER_ID_SERVER,
+			m_external_event_on_connect->getAsExternalEventPacketData());
+		putCommand(c2);
+	}
 }
 
 bool Connection::Connected()

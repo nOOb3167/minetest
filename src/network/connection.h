@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <fstream>
 #include <list>
 #include <map>
+#include <memory>
 
 class NetworkPacket;
 
@@ -821,7 +822,7 @@ public:
 	friend class ConnectionReceiveThread;
 
 	Connection(u32 protocol_id, u32 max_packet_size, float timeout, bool ipv6,
-			PeerHandler *peerhandler);
+			PeerHandler *peerhandler, std::unique_ptr<ExternalEvent> ee);
 	~Connection();
 
 	/* Interface */
@@ -829,6 +830,7 @@ public:
 	void putCommand(ConnectionCommand &c);
 
 	MutexedQueue<ExternalEvent> & getExternalEventQueue() { return m_external_event_queue; }
+	std::unique_ptr<ExternalEvent> & getExternalEventOnConnect() { return m_external_event_on_connect; }
 
 	void SetTimeoutMs(u32 timeout) { m_bc_receive_timeout = timeout; }
 	void Serve(Address bind_addr);
@@ -874,6 +876,7 @@ protected:
 private:
 	MutexedQueue<ConnectionEvent> m_event_queue;
 	MutexedQueue<ExternalEvent>   m_external_event_queue;
+	std::unique_ptr<ExternalEvent> m_external_event_on_connect;
 
 	session_t m_peer_id = 0;
 	u32 m_protocol_id;

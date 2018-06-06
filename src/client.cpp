@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <algorithm>
 #include <sstream>
 #include <cmath>
+#include <memory>
 #include <IFileSystem.h>
 #include "client.h"
 #include "network/clientopcodes.h"
@@ -67,6 +68,7 @@ extern gui::IGUIEnvironment* guienv;
 Client::Client(
 		const char *playername,
 		const std::string &password,
+		const std::string &external_event_on_connect_data,
 		const std::string &address_name,
 		MapDrawControl &control,
 		IWritableTextureSource *tsrc,
@@ -90,7 +92,10 @@ Client::Client(
 		tsrc, this
 	),
 	m_particle_manager(&m_env),
-	m_con(new con::Connection(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, ipv6, this)),
+	m_con(new con::Connection(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, ipv6, this,
+		std::unique_ptr<con::ExternalEvent>(
+			new con::ExternalEvent(PEER_ID_SERVER, 0,
+				"mt.oncon", external_event_on_connect_data)))),
 	m_address_name(address_name),
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_last_chat_message_sent(time(NULL)),

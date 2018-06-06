@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "tileanimation.h"
 #include "mesh_generator_thread.h"
 #include "network/address.h"
+#include "network/connection.h"
 #include "network/peerhandler.h"
 #include <fstream>
 
@@ -125,6 +126,7 @@ public:
 	Client(
 			const char *playername,
 			const std::string &password,
+			const std::string &external_event_on_connect_data,
 			const std::string &address_name,
 			MapDrawControl &control,
 			IWritableTextureSource *tsrc,
@@ -248,6 +250,7 @@ public:
 	void sendReady();
 
 	ClientEnvironment& getEnv() { return m_env; }
+	con::Connection  & getCon() { return *m_con; }
 	ITextureSource *tsrc() { return getTextureSource(); }
 	ISoundManager *sound() { return getSoundManager(); }
 	static const std::string &getBuiltinLuaPath();

@@ -151,11 +151,11 @@ void TestConnection::testConnectSendReceive()
 	}
 
 	infostream << "** Creating server Connection" << std::endl;
-	con::Connection server(proto_id, 512, 5.0, false, &hand_server);
+	con::Connection server(proto_id, 512, 5.0, false, &hand_server, nullptr);
 	server.Serve(address);
 
 	infostream << "** Creating client Connection" << std::endl;
-	con::Connection client(proto_id, 512, 5.0, false, &hand_client);
+	con::Connection client(proto_id, 512, 5.0, false, &hand_client, nullptr);
 
 	UASSERT(hand_server.count == 0);
 	UASSERT(hand_client.count == 0);

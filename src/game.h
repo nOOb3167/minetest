@@ -47,6 +47,7 @@ void the_game(bool *kill,
 		const std::string &map_dir,
 		const std::string &playername,
 		const std::string &password,
+		const std::string &external_event_on_connect_data,
 		const std::string &address, // If "", local server is used
 		u16 port,
 		std::string &error_message,

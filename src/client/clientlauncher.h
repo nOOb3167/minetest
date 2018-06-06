@@ -56,6 +56,7 @@ protected:
 	std::string address = "";
 	std::string playername = "";
 	std::string password = "";
+	std::string external_event_on_connect_data = "";
 	InputHandler *input = nullptr;
 	MyEventReceiver *receiver = nullptr;
 	gui::IGUISkin *skin = nullptr;

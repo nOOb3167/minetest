@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lua_api/l_mainmenu.h"
 #include "lua_api/l_internal.h"
+#include "client.h"
 #include "client/discord.h"
 #include "common/c_content.h"
 #include "cpp_api/s_async.h"
@@ -26,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gui/guiMainMenu.h"
 #include "gui/guiKeyChangeMenu.h"
 #include "gui/guiPathSelectMenu.h"
+#include "network/connection.h"
 #include "version.h"
 #include "porting.h"
 #include "filesys.h"
@@ -129,6 +131,7 @@ int ModApiMainMenu::l_start(lua_State *L)
 	}
 	data->serverdescription = getTextData(L,"serverdescription");
 	data->servername        = getTextData(L,"servername");
+	data->external_event_on_connect_data = getTextData(L, "external_event_on_connect_data");
 
 	//close menu next time
 	engine->m_startgame = true;

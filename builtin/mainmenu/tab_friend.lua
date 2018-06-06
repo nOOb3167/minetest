@@ -1,6 +1,8 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
 assert(httpapi)
 
+gamedata.external_event_on_connect_data = "blah blah data data"
+
 local userlist_refresher = {
 	interval_refresh_ns=5000 * 1000,
 	time_refresh=nil,

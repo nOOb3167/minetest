@@ -41,6 +41,7 @@ struct MainMenuData {
 	std::string port;
 	std::string name;
 	std::string password;
+	std::string external_event_on_connect_data;
 	// Whether to reconnect
 	bool do_reconnect = false;
 
