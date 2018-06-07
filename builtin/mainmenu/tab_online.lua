@@ -175,10 +175,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
 						discord.update_presence({ state="Playing1", details=gamedata.servername })
 					end
 					if (httpapi) then
-						local r = { hello="start" }
-						local j = core.write_json(r)
-						local e = { url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } }
-						httpapi.fetch_async(e)
+						--local r = { hello="start" }
+						--local j = core.write_json(r)
+						--local e = { url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } }
+						--httpapi.fetch_async(e)
 					end
 
 					-- core.start()

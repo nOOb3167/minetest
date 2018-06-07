@@ -34,8 +34,8 @@ if (discord) then
 	discord.update_presence({ state="Menu", details="Main" })
 end
 if (httpapi) then
-	local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")) })
-	httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+	--local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")) })
+	--httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
 end
 
 local menupath = core.get_mainmenu_path()
