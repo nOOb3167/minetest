@@ -1,8 +1,6 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
 assert(httpapi)
 
-gamedata.external_event_on_connect_data = ""
-
 local auth_refresher = {
 	auth_handles=nil,
 	start=function (self)
@@ -26,13 +24,13 @@ local auth_refresher = {
 						v.token = json.token
 						print("completedAUTH " .. tostring(k) .. " : " .. dump(v))
 					end
+					v.completion_cb(res.succeeded, v)
 				end
 			end
 		end
 	end,
 }
 auth_refresher:start()
-auth_refresher:auth_request_for("http://example.com", function () end)
 
 local userlist_refresher = {
 	interval_refresh_ns=5000 * 1000,
@@ -72,6 +70,20 @@ local userlist_refresher = {
 		end
 }
 userlist_refresher:start()
+
+function friend_core_start_override()
+	local function completion_cb(succeeded, auth_handle)
+		gamedata.external_event_on_connect_data = ""
+		if succeeded then
+			assert(type(auth_handle.token) == "string")
+			gamedata.external_event_on_connect_data = auth_handle.token
+		else
+			core.log("external_event_on_connect_data not set")
+		end
+		core.start()
+	end
+	auth_refresher:auth_request_for("http://example.com", completion_cb)
+end
 
 local function asynctestfunc(param)
 	userlist_refresher:step()

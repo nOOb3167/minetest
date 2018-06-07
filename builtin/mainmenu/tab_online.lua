@@ -181,7 +181,8 @@ local function main_button_handler(tabview, fields, name, tabdata)
 						httpapi.fetch_async(e)
 					end
 
-					core.start()
+					-- core.start()
+					friend_core_start_override()
 				end
 			end
 			return true
@@ -355,7 +356,8 @@ local function main_button_handler(tabview, fields, name, tabdata)
 			discord.update_presence({ state="Playing2", details=gamedata.servername })
 		end
 
-		core.start()
+		-- core.start()
+		friend_core_start_override()
 		return true
 	end
 	return false
