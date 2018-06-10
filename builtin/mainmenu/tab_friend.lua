@@ -1,6 +1,37 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
 assert(httpapi)
 
+local party_dialog = {
+	dialog=nil,
+	create=function (self)
+		self.dialog = dialog_create("dlg_party",
+						self.dialog_formspec,
+						self.dialog_button_handler,
+						nil)
+		self.dialog.data = nil
+	end,
+	dialog_formspec=function (dialog_dot_data)
+		local retval =
+			"size[11.5,4.5,true]" ..
+			"field[1,1;3,1;fld_dlg_party_name;;default]" ..
+			"button[3.25,3.5;2.5,0.5;btn_dlg_party_ok;" .. fgettext("Accept") .. "]"
+		return retval
+	end,
+	dialog_button_handler=function (self, fields)
+		print("party name " .. fields["fld_dlg_party_name"])
+		if fields["key_enter"] and fields["key_enter_field"] == "fld_dlg_party_name" then
+			print("party name updated")
+			return true
+		end
+		if fields["btn_dlg_party_ok"] then
+			self:delete()
+			return true
+		end
+		
+		return false
+	end,
+}
+
 local auth_refresher = {
 	auth_handles=nil,
 	start=function (self)
@@ -109,7 +140,8 @@ local function get_formspec(tabview, name, tabdata)
 	retval = retval ..
 		"label[6.05,-0.25;" .. fgettext("Online Party:") .. "]" ..
 		"tablecolumn[color;text]" ..
-		"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]"
+		"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]" ..
+		"button[6,4.85;5.25,0.5;btn_party;" .. fgettext("Create Party") .. "]"
 	return retval
 end
 
@@ -118,6 +150,13 @@ local function handle_buttons(tabview, fields, tabname, tabdata)
 	if fields["userlist"] ~= nil then
 		local event = core.explode_table_event(fields["pkglist"])
 		print("selected " .. tostring(event.row))
+		return true
+	end
+	if fields["btn_party"] ~= nil then
+		party_dialog:create()
+		party_dialog.dialog:set_parent(tabview)
+		tabview:hide()
+		party_dialog.dialog:show()
 		return true
 	end
 
