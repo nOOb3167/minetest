@@ -104,14 +104,18 @@ local function get_formspec(tabview, name, tabdata)
 	local retval =
 		"label[0.05,-0.25;".. fgettext("Online Users:") .. "]" ..
 		"tablecolumns[color;text]" ..
-		"table[0,0.25;5.1,4.3;pkglist;" .. cells .. "]" ..
+		"table[0,0.25;5.1,4.3;userlist;" .. cells .. "]" ..
 		"button[0,4.85;5.25,0.5;btn_contentdb;".. fgettext("Enable Discord Integration") .. "]"
+	retval = retval ..
+		"label[6.05,-0.25;" .. fgettext("Online Party:") .. "]" ..
+		"tablecolumn[color;text]" ..
+		"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]"
 	return retval
 end
 
 
 local function handle_buttons(tabview, fields, tabname, tabdata)
-	if fields["pkglist"] ~= nil then
+	if fields["userlist"] ~= nil then
 		local event = core.explode_table_event(fields["pkglist"])
 		print("selected " .. tostring(event.row))
 		return true
