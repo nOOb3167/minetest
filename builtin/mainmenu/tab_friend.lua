@@ -64,7 +64,7 @@ local auth_refresher = {
 auth_refresher:start()
 
 local userlist_refresher = {
-	interval_refresh_ns=5000 * 1000,
+	interval_refresh_us=5000 * 1000,
 	time_refresh=nil,
 	http_handle=nil,
 	userlist_data=nil,
@@ -80,7 +80,7 @@ local userlist_refresher = {
 			local res = httpapi.fetch_async_get(self.http_handle)
 			if res.completed then
 				self.http_handle = nil
-				self.time_refresh = core.get_us_time() + self.interval_refresh_ns
+				self.time_refresh = core.get_us_time() + self.interval_refresh_us
 				
 				if res.succeeded and res.code == 200 then
 					local json = core.parse_json(res.data)
