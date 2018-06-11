@@ -1,15 +1,26 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
 assert(httpapi)
 
-local party_refresher = {
-	interval_refresh_us=5000 * 1000,
+local http_helper = {
+	interval_refresh_us=nil,
+	xself=nil,
+	issue_request_cb=nil,
+	completion_cb=nil,
 	time_refresh=nil,
 	http_handle=nil,
-	party_data=nil,
-	start=function (self)
+	start=function (http_helper, interval_refresh_us, xself, issue_request_cb, completion_cb)
+		local self = table.copy(http_helper)
+		
+		self.interval_refresh_us = interval_refresh_us
+		self.xself = xself
+		self.issue_request_cb = issue_request_cb
+		self.completion_cb = completion_cb
 		self.time_refresh = core.get_us_time()
-		self.party_data = { partyself={}, partylist={} }
+		self.http_handle = nil
+		
 		self:refresh()
+		
+		return self
 	end,
 	step=function (self)
 		self:refresh()
@@ -19,24 +30,41 @@ local party_refresher = {
 			if res.completed then
 				self.http_handle = nil
 				self.time_refresh = core.get_us_time() + self.interval_refresh_us
-				
-				if res.succeeded and res.code == 200 then
-					local json = core.parse_json(res.data)
-					self.party_data = { partyself=json.partyself, partylist=json.partylist }
-					print("completed1234pppp " .. dump(self.party_data))
-				end
-				
-				ui.update()
+				local success = res.succeeded and res.code == 200
+				local json = success and core.parse_json(res.data) or nil
+				self.xself:completion_cb(success, json)
 			end
 		end
 	end,
 	refresh=function (self)
-			if core.get_us_time() >= self.time_refresh and not self.http_handle then
-				local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partylist" })
-				local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
-				self.http_handle = handle
-			end
+		if core.get_us_time() >= self.time_refresh and not self.http_handle then
+			self.http_handle = self.xself:issue_request_cb()
+		end	
+	end,
+}
+
+local party_refresher = {
+	party_data=nil,
+	issue_request_cb=function (self)
+		print("ISSUING")
+		local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partylist" })
+		local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+		return handle
+	end,
+	completion_cb=function (self, success, json)
+		if success then
+			self.party_data = { partyself=json.partyself, partylist=json.partylist }
+			print("completed1234pppp " .. dump(self.party_data))
+			ui.update()
 		end
+	end,
+	start=function (self)
+		self.party_data = { partyself={}, partylist={} }
+		self.http_helper = http_helper:start(5000 * 1000, self, self.issue_request_cb, self.completion_cb)
+	end,
+	step=function (self)
+		self.http_helper:step()
+	end,
 }
 party_refresher:start()
 
