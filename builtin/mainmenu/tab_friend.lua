@@ -131,41 +131,26 @@ local auth_refresher = {
 auth_refresher:start()
 
 local userlist_refresher = {
-	interval_refresh_us=5000 * 1000,
-	time_refresh=nil,
-	http_handle=nil,
 	userlist_data=nil,
+	issue_request_cb=function (self)
+		local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
+		local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+		return handle
+	end,
+	completion_cb=function (self, success, json)
+		if success then
+			self.userlist_data = { userhash=json.userhash, userlist=json.userlist }
+			print("completed1234 " .. dump(self.userlist_data))
+			ui.update()
+		end
+	end,
 	start=function (self)
-		self.time_refresh = core.get_us_time()
 		self.userlist_data = { userhash=nil, userlist={} }
-		self:refresh()
+		self.http_helper = http_helper:start(5000 * 1000, self, self.issue_request_cb, self.completion_cb)
 	end,
 	step=function (self)
-		self:refresh()
-		
-		if self.http_handle then
-			local res = httpapi.fetch_async_get(self.http_handle)
-			if res.completed then
-				self.http_handle = nil
-				self.time_refresh = core.get_us_time() + self.interval_refresh_us
-				
-				if res.succeeded and res.code == 200 then
-					local json = core.parse_json(res.data)
-					self.userlist_data = { userhash=json.userhash, userlist=json.userlist }
-					print("completed1234 " .. dump(self.userlist_data))
-				end
-				
-				ui.update()
-			end
-		end
+		self.http_helper:step()
 	end,
-	refresh=function (self)
-			if core.get_us_time() >= self.time_refresh and not self.http_handle then
-				local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
-				local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
-				self.http_handle = handle
-			end
-		end
 }
 userlist_refresher:start()
 
