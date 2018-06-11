@@ -1,6 +1,45 @@
 local httpapi = core.request_http_api_mainmenu_trusted()
 assert(httpapi)
 
+local party_refresher = {
+	interval_refresh_us=5000 * 1000,
+	time_refresh=nil,
+	http_handle=nil,
+	party_data=nil,
+	start=function (self)
+		self.time_refresh = core.get_us_time()
+		self.party_data = { partyself={}, partylist={} }
+		self:refresh()
+	end,
+	step=function (self)
+		self:refresh()
+		
+		if self.http_handle then
+			local res = httpapi.fetch_async_get(self.http_handle)
+			if res.completed then
+				self.http_handle = nil
+				self.time_refresh = core.get_us_time() + self.interval_refresh_us
+				
+				if res.succeeded and res.code == 200 then
+					local json = core.parse_json(res.data)
+					self.party_data = { partyself=json.partyself, partylist=json.partylist }
+					print("completed1234pppp " .. dump(self.party_data))
+				end
+				
+				ui.update()
+			end
+		end
+	end,
+	refresh=function (self)
+			if core.get_us_time() >= self.time_refresh and not self.http_handle then
+				local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partylist" })
+				local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+				self.http_handle = handle
+			end
+		end
+}
+party_refresher:start()
+
 local party_dialog = {
 	dialog=nil,
 	create=function (self)
@@ -117,6 +156,7 @@ function friend_core_start_override()
 end
 
 local function asynctestfunc(param)
+	party_refresher:step()
 	userlist_refresher:step()
 	auth_refresher:step()
 	core.handle_async(function (a) return "" end, "", asynctestfunc)
