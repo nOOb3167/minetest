@@ -46,7 +46,6 @@ local http_helper = {
 local party_refresher = {
 	party_data=nil,
 	issue_request_cb=function (self)
-		print("ISSUING")
 		local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partylist" })
 		local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
 		return handle
