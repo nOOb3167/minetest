@@ -68,6 +68,30 @@ local party_refresher = {
 }
 party_refresher:start()
 
+local userlist_refresher = {
+	userlist_data=nil,
+	issue_request_cb=function (self)
+		local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
+		local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+		return handle
+	end,
+	completion_cb=function (self, success, json)
+		if success then
+			self.userlist_data = { userhash=json.userhash, userlist=json.userlist }
+			print("completed1234 " .. dump(self.userlist_data))
+			ui.update()
+		end
+	end,
+	start=function (self)
+		self.userlist_data = { userhash=nil, userlist={} }
+		self.http_helper = http_helper:start(5000 * 1000, self, self.issue_request_cb, self.completion_cb)
+	end,
+	step=function (self)
+		self.http_helper:step()
+	end,
+}
+userlist_refresher:start()
+
 local party_dialog = {
 	dialog=nil,
 	create=function (self)
@@ -129,30 +153,6 @@ local auth_refresher = {
 	end,
 }
 auth_refresher:start()
-
-local userlist_refresher = {
-	userlist_data=nil,
-	issue_request_cb=function (self)
-		local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="userlist" })
-		local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
-		return handle
-	end,
-	completion_cb=function (self, success, json)
-		if success then
-			self.userlist_data = { userhash=json.userhash, userlist=json.userlist }
-			print("completed1234 " .. dump(self.userlist_data))
-			ui.update()
-		end
-	end,
-	start=function (self)
-		self.userlist_data = { userhash=nil, userlist={} }
-		self.http_helper = http_helper:start(5000 * 1000, self, self.issue_request_cb, self.completion_cb)
-	end,
-	step=function (self)
-		self.http_helper:step()
-	end,
-}
-userlist_refresher:start()
 
 function friend_core_start_override()
 	local function completion_cb(succeeded, auth_handle)
