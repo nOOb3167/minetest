@@ -58,7 +58,7 @@ local party_refresher = {
 		end
 	end,
 	start=function (self)
-		self.party_data = { partyself={}, partylist={} }
+		self.party_data = { partyself={ token=nil, name=nil, members=nil }, partylist={} }
 		self.http_helper = http_helper:start(5000 * 1000, self, self.issue_request_cb, self.completion_cb)
 	end,
 	step=function (self)
@@ -114,6 +114,9 @@ local party_dialog = {
 			return true
 		end
 		if fields["btn_dlg_party_ok"] then
+			local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partycreate", party={ name=fields["fld_dlg_party_name"] } })
+			local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+
 			self:delete()
 			return true
 		end
@@ -189,11 +192,22 @@ local function get_formspec(tabview, name, tabdata)
 		"tablecolumns[color;text]" ..
 		"table[0,0.25;5.1,4.3;userlist;" .. cells .. "]" ..
 		"button[0,4.85;5.25,0.5;btn_contentdb;".. fgettext("Enable Discord Integration") .. "]"
-	retval = retval ..
-		"label[6.05,-0.25;" .. fgettext("Online Party:") .. "]" ..
-		"tablecolumn[color;text]" ..
-		"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]" ..
-		"button[6,4.85;5.25,0.5;btn_party;" .. fgettext("Create Party") .. "]"
+	if not party_refresher.party_data.partyself.token then
+		retval = retval ..
+			"label[6.05,-0.25;" .. fgettext("Online Party:") .. "]" ..
+			"tablecolumn[color;text]" ..
+			"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]" ..
+			"button[6,4.85;5.25,0.5;btn_party;" .. fgettext("Create Party") .. "]"	
+	else
+		local cells2 = ""
+		for k,_ in pairs(party_refresher.party_data.partyself.members) do
+			cells2 = cells2 .. "#FFFFFF," .. k .. ","
+		end
+		retval = retval ..
+			"label[6.05,-0.25;" .. fgettext("Party: ") .. party_refresher.party_data.partyself.name .. "]" ..
+			"tablecolumns[color;text]" ..
+			"table[6,0.25;5.1,4.3;partylist;" .. cells2 .. "]"
+	end
 	return retval
 end
 
