@@ -161,7 +161,8 @@ function friend_core_start_override()
 		gamedata.external_event_on_connect_data = ""
 		if succeeded then
 			assert(type(auth_handle.token) == "string")
-			gamedata.external_event_on_connect_data = auth_handle.token
+			local j = core.write_json({ auth_token=auth_handle.token })
+			gamedata.external_event_on_connect_data = j
 		else
 			core.log("external_event_on_connect_data not set")
 		end
