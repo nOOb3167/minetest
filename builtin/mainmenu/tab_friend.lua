@@ -188,6 +188,10 @@ local function get_formspec(tabview, name, tabdata)
 	for i,v in ipairs(userlist_refresher.userlist_data.userlist) do
 		cells = cells .. "#00FF00," .. v .. ","
 	end
+	local pcells = ""
+	for i,v in ipairs(party_refresher.party_data.partylist) do
+		pcells = pcells .. "#00FF00," .. v .. ","
+	end
 	local retval =
 		"label[0.05,-0.25;".. fgettext("Online Users:") .. "]" ..
 		"tablecolumns[color;text]" ..
@@ -197,7 +201,7 @@ local function get_formspec(tabview, name, tabdata)
 		retval = retval ..
 			"label[6.05,-0.25;" .. fgettext("Online Party:") .. "]" ..
 			"tablecolumn[color;text]" ..
-			"table[6,0.25;5.1,4.3;partylist;" .. "#FFFFFF,helloworld1234" .. "]" ..
+			"table[6,0.25;5.1,4.3;partylist;" .. pcells .. "]" ..
 			"button[6,4.85;5.25,0.5;btn_party;" .. fgettext("Create Party") .. "]"	
 	else
 		local cells2 = ""
