@@ -219,7 +219,7 @@ end
 
 local function handle_buttons(tabview, fields, tabname, tabdata)
 	if fields["userlist"] ~= nil then
-		local event = core.explode_table_event(fields["pkglist"])
+		local event = core.explode_table_event(fields["userlist"])
 		print("selected " .. tostring(event.row))
 		return true
 	end
@@ -229,6 +229,15 @@ local function handle_buttons(tabview, fields, tabname, tabdata)
 		tabview:hide()
 		party_dialog.dialog:show()
 		return true
+	end
+	if fields["partylist"] ~= nil then
+		local event = core.explode_table_event(fields["partylist"])
+		if event.type == "DCL" then
+			local partytoken = party_refresher.party_data.partylist[event.row]
+			assert(partytoken)
+			local j = core.write_json({ hash=core.sha1(core.settings:get("friend_key")), action="partyjoin", party={ token=partytoken } })
+			local handle = httpapi.fetch_async({ url="li1826-68.members.linode.com:5000/announce_user", post_data={ json=j } })
+		end
 	end
 
 	return false
